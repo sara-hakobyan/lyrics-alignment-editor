@@ -21,11 +21,15 @@ type EditorState = {
   isSaving: boolean;
   loadTracks: () => Promise<void>;
   addTrack: (input: NewTrackInput) => Promise<void>;
+  deleteTrack: (trackId: string) => Promise<void>;
+  updateTrack: (track: EditorTrack, input: NewTrackInput) => Promise<void>;
+  loadAudioFile: (trackId: string) => Promise<File | null>;
   selectTrack: (trackId: string) => void;
   setDuration: (seconds: number) => void;
   selectLine: (lineId: string | null) => void;
   stampLine: (seconds: number) => void;
   clearLineTiming: (lineId: string) => void;
+  resetTimings: () => Promise<void>;
   saveAlignment: () => Promise<void>;
 };
 
@@ -102,6 +106,60 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } else {
       set({ error: result.error });
     }
+  },
+
+  deleteTrack: async (trackId) => {
+    const result = await service.deleteLocalTrack(trackId);
+    if (!result.success) {
+      set({ error: result.error });
+      return;
+    }
+
+    const wasOpen = get().track?.id === trackId;
+    set((state) => ({
+      tracks: state.tracks.filter((t) => t.id !== trackId),
+      error: null,
+    }));
+
+    // The open track is gone, so the first one left is opened.
+    if (wasOpen) {
+      const next = get().tracks[0];
+      if (next) get().selectTrack(next.id);
+      else set({ track: null, selectedLineId: null });
+    }
+  },
+
+  updateTrack: async (track, input) => {
+    const result = await service.updateLocalTrack(track, input);
+    if (result.success && result.data) {
+      const updated = result.data;
+      set((state) => ({
+        track: state.track?.id === updated.id ? updated : state.track,
+        tracks: replaceTrack(state.tracks, updated),
+        error: null,
+      }));
+    } else {
+      set({ error: result.error });
+    }
+  },
+
+  // Returns the track's stored audio so the edit form can be filled with it.
+  loadAudioFile: async (trackId) => {
+    const result = await service.loadLocalAudio(trackId);
+    if (!result.success) set({ error: result.error });
+    return result.data;
+  },
+
+  // Clears every timing of the open track and saves the empty alignment straight away.
+  resetTimings: async () => {
+    const track = get().track;
+    if (!track) return;
+
+    set((state) => ({
+      startTimesByTrack: withStartTimes(state, track.id, {}),
+      selectedLineId: track.lines[0]?.id ?? null,
+    }));
+    await get().saveAlignment();
   },
 
   saveAlignment: async () => {

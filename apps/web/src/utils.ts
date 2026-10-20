@@ -25,3 +25,15 @@ export const parseLyrics = (text: string): Line[] =>
     .map((row) => row.trim())
     .filter((row) => row !== "")
     .map((row, index) => ({ id: crypto.randomUUID(), index, text: row }));
+
+// New lines whose text matches an old line take its id, so its timing is kept.
+// Repeated lyrics are matched in order.
+export const reuseLineIds = (oldLines: Line[], newLines: Line[]): Line[] => {
+  const unused = [...oldLines];
+  return newLines.map((line) => {
+    const i = unused.findIndex((old) => old.text === line.text);
+    if (i === -1) return line;
+    const [old] = unused.splice(i, 1);
+    return { ...line, id: old.id };
+  });
+};

@@ -39,6 +39,12 @@
   --btn-soft: var(--surface-2);
 }
 
+.danger {
+  --btn-color: var(--danger);
+  --btn-contrast: var(--surface);
+  --btn-soft: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 /* Variants */
 .contained {
   background: var(--btn-color);

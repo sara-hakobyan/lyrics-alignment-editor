@@ -1,34 +1,61 @@
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { FileAudio } from "lucide-react";
 import { useEditorStore } from "../alignment/store";
 import Button from "./common/Button";
 import Modal from "./common/Modal";
 import TextField from "./common/TextField";
 import styles from "./AddTrackModal.module.css";
+import { EditorTrack } from "../types";
+import { useShallow } from "zustand/shallow";
 
 type AddTrackModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  track?: EditorTrack;
 };
 
-export default function AddTrackModal({ isOpen, onClose }: AddTrackModalProps) {
-  const addTrack = useEditorStore((s) => s.addTrack);
+export default function AddTrackModal({
+  isOpen,
+  onClose,
+  track,
+}: AddTrackModalProps) {
+  const { addTrack, updateTrack, loadAudioFile } = useEditorStore(
+    useShallow((s) => ({
+      addTrack: s.addTrack,
+      updateTrack: s.updateTrack,
+      loadAudioFile: s.loadAudioFile,
+    }))
+  );
+  // The add and edit modals can be in the page together, so the id must be unique.
+  const audioFileId = useId();
 
-  const [audioUrl, setAudioUrl] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
   const audioFileRef = useRef<HTMLInputElement>(null);
-  const [lyrics, setLyrics] = useState("");
-  const [trackTitle, setTrackTitle] = useState("");
-  const [artist, setArtist] = useState("");
+  const [lyrics, setLyrics] = useState(
+    track?.lines.map((line) => line.text).join("\n") ?? ""
+  );
+  const [trackTitle, setTrackTitle] = useState(track?.title ?? "");
+  const [artist, setArtist] = useState(track?.artist ?? "");
 
-  const canAddTrack = audioUrl !== "" && lyrics.trim() !== "";
+  // When editing, the form is filled with the track's stored audio too.
+  useEffect(() => {
+    if (!track) return;
+    loadAudioFile(track.id).then(setAudioFile);
+  }, [track, loadAudioFile]);
 
-  const addNewTrack = async () => {
-    if (!canAddTrack) return;
+  const canSubmit = audioFile !== null && lyrics.trim() !== "";
 
-    await addTrack({ title: trackTitle, artist, audioUrl, lyrics });
+  const submit = async () => {
+    if (!canSubmit) return;
+
+    const input = { title: trackTitle, artist, audioFile, lyrics };
+    if (track) await updateTrack(track, input);
+    else await addTrack(input);
 
     setTrackTitle("");
+
     setArtist("");
-    setAudioUrl("");
+    setAudioFile(null);
     // A file input can't be cleared through state, only through the element.
     if (audioFileRef.current) audioFileRef.current.value = "";
     setLyrics("");
@@ -54,21 +81,32 @@ export default function AddTrackModal({ isOpen, onClose }: AddTrackModalProps) {
           placeholder="Artist name"
         />
 
-        <div className={styles.fileField}>
-          <label htmlFor="audio-file" className={styles.fileLabel}>
-            Audio file
-          </label>
-          <input
-            id="audio-file"
-            ref={audioFileRef}
-            type="file"
-            accept="audio/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              setAudioUrl(file ? URL.createObjectURL(file) : "");
-            }}
-          />
-        </div>
+        {/* The audio can't be changed when editing, so the stored file is only shown. */}
+        {track ? (
+          <div className={styles.fileField}>
+            <span className={styles.fileLabel}>Audio file</span>
+            <div className={styles.audioFile}>
+              <FileAudio />
+              <span>{audioFile?.name ?? "Loading…"}</span>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.fileField}>
+            <label htmlFor={audioFileId} className={styles.fileLabel}>
+              Audio file
+            </label>
+            <input
+              id={audioFileId}
+              ref={audioFileRef}
+              type="file"
+              accept="audio/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                setAudioFile(file ?? null);
+              }}
+            />
+          </div>
+        )}
 
         <TextField
           label="Lyrics"
@@ -83,8 +121,8 @@ export default function AddTrackModal({ isOpen, onClose }: AddTrackModalProps) {
           <Button variant="text" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={addNewTrack} disabled={!canAddTrack}>
-            Add track
+          <Button onClick={submit} disabled={!canSubmit}>
+            {track ? "Update track" : "Add track"}
           </Button>
         </div>
       </div>

@@ -8,7 +8,7 @@ import type {
   Segment,
   Track,
 } from "../types";
-import { parseLyrics } from "../utils";
+import { parseLyrics, reuseLineIds } from "../utils";
 
 import * as remoteRepository from "./remoteRepository";
 import * as localRepository from "./localRepository";
@@ -61,14 +61,42 @@ export function createLocalTrack(
       title: input.title.trim() || "Untitled track",
       artist: input.artist.trim() || "Unknown artist",
       duration_seconds: 0, // unknown until the audio loads
-      audio_url: input.audioUrl.trim(),
+      audio_url: URL.createObjectURL(input.audioFile),
       lines: parseLyrics(input.lyrics),
       version: 0,
       alignment: null, // nothing timed yet
       isLocal: true,
     };
-    await localRepository.addLocalTrack(track);
+    await localRepository.addLocalTrack(track, input.audioFile);
     return track;
+  });
+}
+
+export function deleteLocalTrack(trackId: string): Promise<Result<void>> {
+  return toResult(() => localRepository.deleteLocalTrack(trackId));
+}
+
+export function loadLocalAudio(trackId: string): Promise<Result<File>> {
+  return toResult(async () => {
+    const file = await localRepository.getLocalAudio(trackId);
+    if (!file) throw new Error("This track's audio file is missing.");
+    return file;
+  });
+}
+
+export function updateLocalTrack(
+  track: EditorTrack,
+  input: NewTrackInput
+): Promise<Result<EditorTrack>> {
+  return toResult(async () => {
+    const updated: EditorTrack = {
+      ...track,
+      title: input.title.trim() || "Untitled track",
+      artist: input.artist.trim() || "Unknown artist",
+      lines: reuseLineIds(track.lines, parseLyrics(input.lyrics)),
+    };
+    await localRepository.updateLocalTrack(updated);
+    return updated;
   });
 }
 
