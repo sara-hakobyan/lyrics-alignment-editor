@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { cx } from "../../utils";
 import styles from "./TextField.module.css";
 
 type TextFieldProps = {
@@ -29,7 +30,7 @@ export default function TextField({
     id,
     value,
     placeholder,
-    className: error ? `${styles.input} ${styles.invalid}` : styles.input,
+    className: cx(styles.input, error && styles.invalid),
     "aria-invalid": error ? true : undefined,
     "aria-describedby": error ? errorId : undefined,
   };

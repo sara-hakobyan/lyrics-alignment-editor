@@ -7,6 +7,14 @@ export const formatTime = (seconds: number): string => {
   return `${minutes}:${remainingSeconds}`;
 };
 
+// Line timings are kept in ms; `undefined` means the line has no time yet.
+export const formatMs = (ms: number | undefined): string =>
+  ms === undefined ? "Not timed" : formatTime(ms / 1000);
+
+// Joins class names, skipping the ones whose condition is false.
+export const cx = (...classes: (string | false | null | undefined)[]): string =>
+  classes.filter(Boolean).join(" ");
+
 export const wait = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 

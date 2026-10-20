@@ -18,6 +18,13 @@ export type Track = {
 // Any track the editor works with: from the backend (isLocal: false) or added by the user (isLocal: true).
 export type EditorTrack = Track & { isLocal: boolean };
 
+export type NewTrackInput = {
+  title: string;
+  artist: string;
+  audioUrl: string;
+  lyrics: string;
+};
+
 export type Segment = { line_id: string; start_ms: number; end_ms: number };
 
 export type Alignment = { segments: Segment[] };
@@ -36,7 +43,7 @@ export type SaveAlignmentResponse = {
   alignment: Alignment;
 };
 
-export type Response<T> = {
+export type Result<T> = {
   success: boolean;
   data: T | null;
   error: string | null;
