@@ -12,6 +12,18 @@
   gap: var(--space-2);
 }
 
+/* Heading on the left, Save on the right. */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionHeader h3 {
+  margin: 0;
+}
+
 .tracks {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -56,6 +68,9 @@
 }
 
 .trackTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 600;
 }
 
@@ -71,15 +86,4 @@
 .audio {
   width: 100%;
   max-width: none;
-}
-
-.placeholder {
-  display: grid;
-  place-items: center;
-  min-height: 120px;
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
 }

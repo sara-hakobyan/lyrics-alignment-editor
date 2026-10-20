@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import type { EditorTrack, NewTrackInput } from "../types";
 import { wait } from "../utils";
-import { buildSegments } from "./segments";
+import {
+  buildSegments,
+  canShift,
+  findTimingIssues,
+  savedStartTimes,
+} from "./segments";
 import * as service from "./service";
 
 // Loaders stay up at least this long, so a fast response doesn't just flash them.
@@ -16,6 +21,8 @@ type EditorState = {
   // Stamps per track id, saved or not, so switching tracks keeps them.
   startTimesByTrack: Record<string, StartTimes>;
   selectedLineId: string | null;
+  // Lines ticked for bulk actions; separate from the line selected for stamping.
+  checkedLineIds: string[];
   error: string | null;
   isLoading: boolean;
   isSaving: boolean;
@@ -29,17 +36,16 @@ type EditorState = {
   selectLine: (lineId: string | null) => void;
   stampLine: (seconds: number) => void;
   clearLineTiming: (lineId: string) => void;
+  revertLine: (lineId: string) => void;
+  setCheckedLineIds: (lineIds: string[]) => void;
+  // Moves the given lines, or the checked ones when no ids are passed.
+  nudgeLines: (deltaMs: number, lineIds?: string[]) => void;
   resetTimings: () => Promise<void>;
   saveAlignment: () => Promise<void>;
 };
 
 const replaceTrack = (tracks: EditorTrack[], updated: EditorTrack) =>
   tracks.map((t) => (t.id === updated.id ? updated : t));
-
-const savedStartTimes = (track: EditorTrack): StartTimes =>
-  Object.fromEntries(
-    (track.alignment?.segments ?? []).map((s) => [s.line_id, s.start_ms])
-  );
 
 const withStartTimes = (
   state: EditorState,
@@ -52,6 +58,7 @@ const withStartTimes = (
 const openTrack = (state: EditorState, track: EditorTrack) => ({
   track,
   selectedLineId: track.lines[0]?.id ?? null,
+  checkedLineIds: [],
   startTimesByTrack: withStartTimes(
     state,
     track.id,
@@ -64,6 +71,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   tracks: [],
   startTimesByTrack: {},
   selectedLineId: null,
+  checkedLineIds: [],
   error: null,
   isLoading: false,
   isSaving: false,
@@ -166,8 +174,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const { track, startTimesByTrack } = get();
     if (!track) return;
 
-    set({ isSaving: true });
     const segments = buildSegments(track, startTimesByTrack[track.id] ?? {});
+    // Invalid timings are never sent: the API would reject them, and local saves wouldn't.
+    const issues = findTimingIssues(segments);
+    if (issues.length > 0) {
+      const count =
+        issues.length === 1 ? "1 line has" : `${issues.length} lines have`;
+      set({
+        error: `${count} invalid timing. Fix the lines marked in red, then save.`,
+      });
+      return;
+    }
+
+    set({ isSaving: true });
     const [result] = await Promise.all([
       service.saveAlignment(track, segments),
       wait(MIN_LOADING_MS),
@@ -179,6 +198,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set((state) => ({
         // The user may have switched tracks while the save was running.
         track: state.track?.id === updated.id ? updated : state.track,
+        checkedLineIds:
+          state.track?.id === updated.id ? [] : state.checkedLineIds,
         tracks: replaceTrack(state.tracks, updated),
         error: null,
         isSaving: false,
@@ -238,5 +259,43 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         selectedLineId: lineId,
       };
     });
+  },
+
+  // Puts a line back to its last saved start time, or untimed if it was never saved.
+  revertLine: (lineId) => {
+    const track = get().track;
+    if (!track) return;
+
+    const savedMs = savedStartTimes(track)[lineId];
+    set((state) => {
+      const updated = { ...state.startTimesByTrack[track.id] };
+      if (savedMs === undefined) delete updated[lineId];
+      else updated[lineId] = savedMs;
+      return {
+        startTimesByTrack: withStartTimes(state, track.id, updated),
+        selectedLineId: lineId,
+      };
+    });
+  },
+
+  setCheckedLineIds: (lineIds) => set({ checkedLineIds: lineIds }),
+
+  // Moves every given (or checked), timed line by `deltaMs`, keeping their spacing.
+  // A step that would leave the track or break a line's timing does nothing.
+  nudgeLines: (deltaMs, lineIds) => {
+    const { track, checkedLineIds, startTimesByTrack } = get();
+    if (!track) return;
+
+    const ids = lineIds ?? checkedLineIds;
+    const startTimes = startTimesByTrack[track.id] ?? {};
+    if (!canShift(track, startTimes, ids, deltaMs)) return;
+
+    const updated = { ...startTimes };
+    for (const lineId of ids) {
+      if (updated[lineId] !== undefined) updated[lineId] += deltaMs;
+    }
+    set((state) => ({
+      startTimesByTrack: withStartTimes(state, track.id, updated),
+    }));
   },
 }));

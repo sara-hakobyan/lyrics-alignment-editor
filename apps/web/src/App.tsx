@@ -5,7 +5,12 @@ import AudioScreen from "./components/AudioScreen";
 import LineDetailsPanel from "./components/LineDetailsPanel";
 import Spinner from "./components/common/Spinner";
 import styles from "./App.module.css";
-import { buildSegments } from "./alignment/segments";
+import {
+  buildSegments,
+  findTimingIssues,
+  canShift,
+  savedStartTimes,
+} from "./alignment/segments";
 import { useEditorStore } from "./alignment/store";
 import { useShallow } from "zustand/shallow";
 
@@ -17,11 +22,15 @@ export default function App() {
     track,
     startTimesMs,
     selectedLineId,
+    checkedLineIds,
     error,
     loadTracks,
     selectLine,
     stampLine,
     clearLineTiming,
+    revertLine,
+    setCheckedLineIds,
+    nudgeLines,
   } = useEditorStore(
     useShallow((s) => ({
       track: s.track,
@@ -29,11 +38,15 @@ export default function App() {
         ? s.startTimesByTrack[s.track.id] ?? NO_START_TIMES
         : NO_START_TIMES,
       selectedLineId: s.selectedLineId,
+      checkedLineIds: s.checkedLineIds,
       error: s.error,
       loadTracks: s.loadTracks,
       selectLine: s.selectLine,
       stampLine: s.stampLine,
       clearLineTiming: s.clearLineTiming,
+      revertLine: s.revertLine,
+      setCheckedLineIds: s.setCheckedLineIds,
+      nudgeLines: s.nudgeLines,
     }))
   );
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -42,10 +55,22 @@ export default function App() {
     loadTracks();
   }, [loadTracks]);
 
-  const endMsByLineId = useMemo(() => {
+  const { segments, endMsByLineId, issueByLineId } = useMemo(() => {
     const segments = track ? buildSegments(track, startTimesMs) : [];
-    return new Map(segments.map((s) => [s.line_id, s.end_ms]));
+    return {
+      segments,
+      endMsByLineId: new Map(segments.map((s) => [s.line_id, s.end_ms])),
+      issueByLineId: new Map(
+        findTimingIssues(segments).map((issue) => [issue.lineId, issue.message])
+      ),
+    };
   }, [track, startTimesMs]);
+
+  // The last saved start times, which the right panel's Undo goes back to.
+  const savedStartTimesMs = useMemo(
+    () => (track ? savedStartTimes(track) : NO_START_TIMES),
+    [track]
+  );
 
   const playLine = (lineId: string) => {
     const audio = audioRef.current;
@@ -100,6 +125,10 @@ export default function App() {
     (line) => line.id === selectedLineId
   );
   const selectedLine = track.lines[selectedIndex];
+  const canNudgeChecked = (ms: number) =>
+    canShift(track, startTimesMs, checkedLineIds, ms);
+  const canNudgeSelected = (ms: number) =>
+    !!selectedLine && canShift(track, startTimesMs, [selectedLine.id], ms);
 
   return (
     <div className={styles.editor}>
@@ -113,16 +142,37 @@ export default function App() {
           onSelectLine={selectLine}
           onPlayLine={playLine}
           onClearLineTiming={clearLineTiming}
+          savedStartTimesMs={savedStartTimesMs}
+          timingIssues={issueByLineId}
+          checkedLineIds={checkedLineIds}
+          onCheckedLinesChange={setCheckedLineIds}
+          canNudge={canNudgeChecked}
+          onNudge={nudgeLines}
         />
 
-        <AudioScreen audioUrl={track.audio_url} audioRef={audioRef} />
+        <AudioScreen
+          audioUrl={track.audio_url}
+          audioRef={audioRef}
+          lines={track.lines}
+          segments={segments}
+        />
 
         <LineDetailsPanel
           selectedLine={selectedLine}
           lineNumber={selectedLine ? selectedIndex + 1 : undefined}
           startMs={selectedLine ? startTimesMs[selectedLine.id] : undefined}
           endMs={selectedLine ? endMsByLineId.get(selectedLine.id) : undefined}
-          onClearLineTiming={clearLineTiming}
+          timingIssue={
+            selectedLine ? issueByLineId.get(selectedLine.id) : undefined
+          }
+          isChanged={
+            !!selectedLine &&
+            startTimesMs[selectedLine.id] !== savedStartTimesMs[selectedLine.id]
+          }
+          onPlayLine={playLine}
+          onRevertLine={revertLine}
+          canNudge={canNudgeSelected}
+          onNudge={(ms) => selectedLine && nudgeLines(ms, [selectedLine.id])}
         />
       </div>
     </div>
