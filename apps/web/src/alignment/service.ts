@@ -1,14 +1,17 @@
 import { ApiError } from "../api";
 import type {
   EditorTrack,
-  Response,
+  NewTrackInput,
+  Result,
+  SaveAlignmentRequest,
   SaveAlignmentResponse,
   Segment,
   Track,
 } from "../types";
+import { parseLyrics } from "../utils";
 
-import * as repository from "./repository";
-import * as storage from "../storage/storage";
+import * as remoteRepository from "./remoteRepository";
+import * as localRepository from "./localRepository";
 
 // Uses the server's `hint` when there is one, because it says what to fix.
 function errorMessage(e: unknown): string {
@@ -22,61 +25,66 @@ function errorMessage(e: unknown): string {
   return String(e);
 }
 
-export async function loadTrack(): Promise<Response<Track>> {
+// Runs the call and turns its result or thrown error into a Result.
+async function toResult<T>(call: () => Promise<T>): Promise<Result<T>> {
   try {
-    const data = await repository.getTrack();
+    const data = await call();
     return { success: true, data, error: null };
   } catch (e) {
     return { success: false, data: null, error: errorMessage(e) };
   }
 }
 
-export async function loadLocalTracks(): Promise<Response<EditorTrack[]>> {
-  try {
-    const tracks = await storage.getLocalTracks();
+export function loadTrack(): Promise<Result<Track>> {
+  return toResult(() => remoteRepository.getTrack());
+}
+
+export function loadLocalTracks(): Promise<Result<EditorTrack[]>> {
+  return toResult(async () => {
+    const tracks = await localRepository.getLocalTracks();
     // Each local track's latest saved version, lines and timings live under their own key.
-    const data = await Promise.all(
+    return Promise.all(
       tracks.map(async (track) => {
-        const saved = await storage.loadAlignment(track.id);
+        const saved = await localRepository.loadAlignment(track.id);
         return saved ? { ...track, ...saved } : track;
       })
     );
-    return { success: true, data, error: null };
-  } catch (e) {
-    return { success: false, data: null, error: errorMessage(e) };
-  }
+  });
 }
 
-export async function addLocalTrack(
-  track: EditorTrack
-): Promise<Response<EditorTrack>> {
-  try {
-    await storage.addLocalTrack(track);
-    return { success: true, data: track, error: null };
-  } catch (e) {
-    return { success: false, data: null, error: errorMessage(e) };
-  }
+export function createLocalTrack(
+  input: NewTrackInput
+): Promise<Result<EditorTrack>> {
+  return toResult(async () => {
+    const track: EditorTrack = {
+      id: crypto.randomUUID(),
+      title: input.title.trim() || "Untitled track",
+      artist: input.artist.trim() || "Unknown artist",
+      duration_seconds: 0, // unknown until the audio loads
+      audio_url: input.audioUrl.trim(),
+      lines: parseLyrics(input.lyrics),
+      version: 0,
+      alignment: null, // nothing timed yet
+      isLocal: true,
+    };
+    await localRepository.addLocalTrack(track);
+    return track;
+  });
 }
 
-export async function saveAlignment(
+export function saveAlignment(
   track: EditorTrack,
   segments: Segment[]
-): Promise<Response<SaveAlignmentResponse>> {
-  try {
-    const data = track.isLocal
-      ? await storage.saveAlignment(track.id, {
-          version: track.version,
-          lines: track.lines,
-          segments,
-        })
-      : await repository.saveAlignment({
-          version: track.version,
-          lines: track.lines,
-          segments,
-        });
+): Promise<Result<SaveAlignmentResponse>> {
+  const body: SaveAlignmentRequest = {
+    version: track.version,
+    lines: track.lines,
+    segments,
+  };
 
-    return { success: true, data, error: null };
-  } catch (e) {
-    return { success: false, data: null, error: errorMessage(e) };
-  }
+  return toResult(() =>
+    track.isLocal
+      ? localRepository.saveAlignment(track.id, body)
+      : remoteRepository.saveAlignment(body)
+  );
 }

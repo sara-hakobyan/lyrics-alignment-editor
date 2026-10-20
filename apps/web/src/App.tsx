@@ -1,83 +1,50 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
-import type { Alignment, Segment } from "./types";
+import { useEffect, useMemo, useRef } from "react";
 import Topbar from "./components/Topbar";
-import LeftPannel from "./components/LeftPannel";
+import LyricsPanel from "./components/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
-import RightPannel from "./components/RightPannel";
+import LineDetailsPanel from "./components/LineDetailsPanel";
+import Spinner from "./components/common/Spinner";
 import styles from "./App.module.css";
-import { useAlignmentStore } from "./alignment/store";
+import { buildSegments } from "./alignment/segments";
+import { useEditorStore } from "./alignment/store";
 import { useShallow } from "zustand/shallow";
 
+// Same object every time, so the store selector doesn't see a "change" when a track has no stamps.
+const NO_START_TIMES: Record<string, number> = {};
+
 export default function App() {
-  const { track, error, loadTrack } = useAlignmentStore(
+  const {
+    track,
+    startTimesMs,
+    selectedLineId,
+    error,
+    loadTracks,
+    selectLine,
+    stampLine,
+    clearLineTiming,
+  } = useEditorStore(
     useShallow((s) => ({
       track: s.track,
+      startTimesMs: s.track
+        ? s.startTimesByTrack[s.track.id] ?? NO_START_TIMES
+        : NO_START_TIMES,
+      selectedLineId: s.selectedLineId,
       error: s.error,
-      loadTrack: s.loadTrack,
-      isLoading: s.isLoading,
+      loadTracks: s.loadTracks,
+      selectLine: s.selectLine,
+      stampLine: s.stampLine,
+      clearLineTiming: s.clearLineTiming,
     }))
   );
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [startTimesMs, setStartTimesMs] = useState<Record<string, number>>({});
-  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTrack();
-  }, [loadTrack]);
+    loadTracks();
+  }, [loadTracks]);
 
-  useEffect(() => {
-    if (!track) return;
-    setSelectedLineId(track.lines[0]?.id ?? null);
-    setStartTimesMs(
-      Object.fromEntries(
-        (track.alignment?.segments ?? []).map((s) => [s.line_id, s.start_ms])
-      )
-    );
-  }, [track?.id]);
-
-  console.log(track);
-  // Stamps the selected line with the current playback time, then moves the
-  // selection to the next line so the user can keep tapping.
-  const stampSelectedLine = (currentTime: number) => {
-    if (!track || !selectedLineId) return;
-
-    const selectedIndex = track.lines.findIndex(
-      (line) => line.id === selectedLineId
-    );
-    if (selectedIndex === -1) return;
-
-    setStartTimesMs({
-      ...startTimesMs,
-      [selectedLineId]: Math.round(currentTime * 1000),
-    });
-    setSelectedLineId(track.lines[selectedIndex + 1]?.id ?? null);
-  };
-
-  const alignment = useMemo<Alignment>(() => {
-    const segments: Segment[] = track
-      ? track.lines
-          .filter((line) => startTimesMs[line.id] !== undefined)
-          .map((line) => {
-            const lineIndex = track.lines.findIndex(
-              (item) => item.id === line.id
-            );
-
-            const nextTimedLine = track.lines
-              .slice(lineIndex + 1)
-              .find((item) => startTimesMs[item.id] !== undefined);
-
-            return {
-              line_id: line.id,
-              start_ms: startTimesMs[line.id],
-              end_ms: nextTimedLine
-                ? startTimesMs[nextTimedLine.id]
-                : Math.round((track.duration_seconds ?? 0) * 1000),
-            };
-          })
-      : [];
-
-    return { segments };
+  const endMsByLineId = useMemo(() => {
+    const segments = track ? buildSegments(track, startTimesMs) : [];
+    return new Map(segments.map((s) => [s.line_id, s.end_ms]));
   }, [track, startTimesMs]);
 
   const playLine = (lineId: string) => {
@@ -85,19 +52,9 @@ export default function App() {
     const startMs = startTimesMs[lineId];
 
     if (!audio || startMs === undefined) return;
-    setSelectedLineId(lineId);
+    selectLine(lineId);
     audio.currentTime = startMs / 1000;
     void audio.play();
-  };
-
-  const clearLineTiming = (lineId: string) => {
-    setStartTimesMs((prev) => {
-      const updated = { ...prev };
-      delete updated[lineId];
-      return updated;
-    });
-
-    setSelectedLineId(lineId);
   };
 
   useEffect(() => {
@@ -118,7 +75,7 @@ export default function App() {
       const audio = audioRef.current;
       if (!audio || audio.paused) return;
 
-      stampSelectedLine(audio.currentTime);
+      stampLine(audio.currentTime);
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
@@ -126,15 +83,15 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [track, selectedLineId, startTimesMs]);
+  }, [stampLine]);
 
   // Save errors show in the top bar; these screens are only for before the track loads.
   if (!track && error) return <p className={styles.status}>{error}</p>;
   if (!track) {
     return (
       <div className={styles.loader} role="status">
-        <Loader2 className={styles.spinner} aria-hidden="true" />
-        <span>Loading track…</span>
+        <Spinner className={styles.spinner} />
+        <span>Loading editor…</span>
       </div>
     );
   }
@@ -146,28 +103,25 @@ export default function App() {
 
   return (
     <div className={styles.editor}>
-      <Topbar title={track.title} segments={alignment.segments} />
+      <Topbar />
 
       <div className={styles.editorContent}>
-        <LeftPannel
+        <LyricsPanel
           lines={track.lines}
           startTimesMs={startTimesMs}
           selectedLineId={selectedLineId}
-          onSelectLine={setSelectedLineId}
+          onSelectLine={selectLine}
           onPlayLine={playLine}
           onClearLineTiming={clearLineTiming}
         />
 
         <AudioScreen audioUrl={track.audio_url} audioRef={audioRef} />
 
-        <RightPannel
+        <LineDetailsPanel
           selectedLine={selectedLine}
           lineNumber={selectedLine ? selectedIndex + 1 : undefined}
           startMs={selectedLine ? startTimesMs[selectedLine.id] : undefined}
-          endMs={
-            alignment.segments.find((s) => s.line_id === selectedLine?.id)
-              ?.end_ms
-          }
+          endMs={selectedLine ? endMsByLineId.get(selectedLine.id) : undefined}
           onClearLineTiming={clearLineTiming}
         />
       </div>

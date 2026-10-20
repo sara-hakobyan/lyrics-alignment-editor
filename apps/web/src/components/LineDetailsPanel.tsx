@@ -1,10 +1,10 @@
 import { Undo2 } from "lucide-react";
 import type { Line } from "../types";
-import { formatTime } from "../utils";
+import { formatMs } from "../utils";
 import Button from "./common/Button";
-import styles from "./RightPannel.module.css";
+import styles from "./LineDetailsPanel.module.css";
 
-type RightPannelProps = {
+type LineDetailsPanelProps = {
   selectedLine: Line | undefined;
   lineNumber: number | undefined;
   startMs: number | undefined;
@@ -12,13 +12,13 @@ type RightPannelProps = {
   onClearLineTiming: (lineId: string) => void;
 };
 
-export default function RightPannel({
+export default function LineDetailsPanel({
   selectedLine,
   lineNumber,
   startMs,
   endMs,
   onClearLineTiming,
-}: RightPannelProps) {
+}: LineDetailsPanelProps) {
   const isTimed = startMs !== undefined;
 
   return (
@@ -35,12 +35,12 @@ export default function RightPannel({
       <dl className={styles.times}>
         <dt>Start</dt>
         <dd className={isTimed ? undefined : styles.muted}>
-          {isTimed ? formatTime(startMs / 1000) : "Not timed"}
+          {formatMs(startMs)}
         </dd>
 
         <dt>End</dt>
         <dd className={endMs !== undefined ? undefined : styles.muted}>
-          {endMs !== undefined ? formatTime(endMs / 1000) : "Not timed"}
+          {formatMs(endMs)}
         </dd>
       </dl>
 

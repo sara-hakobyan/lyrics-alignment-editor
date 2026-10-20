@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { cx } from "../../utils";
+import Spinner from "./Spinner";
 import styles from "./Button.module.css";
 
 type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & {
@@ -27,19 +28,17 @@ export default function Button({
   children,
   ...rest
 }: ButtonProps) {
-  const classes = [
+  const classes = cx(
     styles.button,
     styles[variant],
     styles[color],
     styles[size],
-    icon ? styles.iconOnly : "",
-    loading ? styles.loading : "",
-    className ?? "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+    !!icon && styles.iconOnly,
+    loading && styles.loading,
+    className
+  );
 
-  const spinner = <Loader2 className={styles.spinner} aria-hidden="true" />;
+  const spinner = <Spinner />;
 
   return (
     <button

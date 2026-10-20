@@ -1,10 +1,10 @@
 import { Play, Undo2 } from "lucide-react";
 import type { Line } from "../types";
-import { formatTime } from "../utils";
+import { cx, formatMs } from "../utils";
 import Button from "./common/Button";
-import styles from "./LeftPannel.module.css";
+import styles from "./LyricsPanel.module.css";
 
-type LeftPannelProps = {
+type LyricsPanelProps = {
   lines: Line[];
   startTimesMs: Record<string, number>;
   selectedLineId: string | null;
@@ -13,14 +13,14 @@ type LeftPannelProps = {
   onClearLineTiming: (lineId: string) => void;
 };
 
-export default function LeftPannel({
+export default function LyricsPanel({
   lines,
   startTimesMs,
   selectedLineId,
   onSelectLine,
   onPlayLine,
   onClearLineTiming,
-}: LeftPannelProps) {
+}: LyricsPanelProps) {
   const untimedCount = lines.filter(
     (line) => startTimesMs[line.id] === undefined
   ).length;
@@ -44,16 +44,14 @@ export default function LeftPannel({
             <li
               key={line.id}
               onClick={() => onSelectLine(line.id)}
-              className={
-                isSelected ? `${styles.line} ${styles.selectedLine}` : styles.line
-              }
+              className={cx(styles.line, isSelected && styles.selectedLine)}
             >
               <span className={styles.number}>{index + 1}</span>
               <span className={styles.text}>{line.text}</span>
 
               <div className={styles.meta}>
                 <span className={isTimed ? styles.time : styles.untimed}>
-                  {isTimed ? formatTime(startMs / 1000) : "Not timed"}
+                  {formatMs(startMs)}
                 </span>
 
                 {isTimed && (

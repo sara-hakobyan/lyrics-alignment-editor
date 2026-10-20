@@ -22,31 +22,3 @@
   font-size: 0.8125rem;
   color: var(--danger);
 }
-
-/* Add-track modal */
-.form {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.formTitle {
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-.fileField {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.fileLabel {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { MoreVertical } from "lucide-react";
+import { cx } from "../../utils";
 import Button from "./Button";
 import styles from "./ActionMenu.module.css";
 
@@ -71,9 +72,7 @@ export default function ActionMenu({
             <li key={action.label}>
               <button
                 type="button"
-                className={
-                  action.danger ? `${styles.item} ${styles.danger}` : styles.item
-                }
+                className={cx(styles.item, action.danger && styles.danger)}
                 onClick={() => {
                   setIsOpen(false);
                   action.onClick();

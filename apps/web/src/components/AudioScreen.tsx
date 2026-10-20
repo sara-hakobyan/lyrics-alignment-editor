@@ -1,8 +1,9 @@
 import type { RefObject } from "react";
 import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useShallow } from "zustand/shallow";
-import { useAlignmentStore } from "../alignment/store";
+import { useEditorStore } from "../alignment/store";
 import type { EditorTrack } from "../types";
+import { cx } from "../utils";
 import ActionMenu, { type Action } from "./common/ActionMenu";
 import styles from "./AudioScreen.module.css";
 
@@ -42,7 +43,7 @@ type AudioScreenProps = {
 
 export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
   const { tracks, currentTrackId, selectTrack, setDuration } =
-    useAlignmentStore(
+    useEditorStore(
       useShallow((s) => ({
         tracks: s.tracks,
         currentTrackId: s.track?.id,
@@ -57,13 +58,13 @@ export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
 
     switch (action) {
       case "edit":
-        console.log("Edit track", track.id);
+        // TODO: open the track in the edit modal
         break;
       case "reset":
-        console.log("Reset timings", track.id);
+        // TODO: clear all timings of the track
         break;
       case "delete":
-        console.log("Delete track", track.id);
+        // TODO: remove the local track from storage and the list
         break;
     }
   };
@@ -79,9 +80,7 @@ export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
             return (
               <li
                 key={track.id}
-                className={
-                  isCurrent ? `${styles.track} ${styles.current}` : styles.track
-                }
+                className={cx(styles.track, isCurrent && styles.current)}
               >
                 <button
                   type="button"

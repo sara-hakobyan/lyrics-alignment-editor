@@ -1,0 +1,24 @@
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.formTitle {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+/* The file input isn't a TextField, but looks like one. */
+.fileField {
+  composes: field from "./common/TextField.module.css";
+}
+
+.fileLabel {
+  composes: label from "./common/TextField.module.css";
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

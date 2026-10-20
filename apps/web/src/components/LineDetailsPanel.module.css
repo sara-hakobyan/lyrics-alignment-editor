@@ -9,10 +9,6 @@
   border-left: 1px solid var(--border);
 }
 
-.panel h3 {
-  margin: 0;
-}
-
 .number {
   color: var(--accent);
 }
