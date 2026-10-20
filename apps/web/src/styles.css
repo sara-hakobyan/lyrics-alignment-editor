@@ -14,17 +14,28 @@
  */
 
 :root {
-  /* Colour: light by default, dark below. Swap the values, or the whole idea. */
-  --bg: #fbfbfa;
+  /* ---------- Light theme ---------- */
+  --bg: #f7f7f9;
   --surface: #ffffff;
-  --border: #e3e2df;
-  --text: #1c1b19;
-  --text-muted: #6b6862;
-  --accent: #2f6f4f;
+  --surface-2: #f0f0f4;
+  --border: #e2e2ea;
+  --text: #17171c;
+  --text-muted: #63636e;
+  --accent: #5b4bdb;
   --accent-contrast: #ffffff;
-  --danger: #a33a2c;
+  --accent-soft: #ecebfc;
+  --success: #1f7a4d;
+  --warning: #a15c07;
+  --danger: #b42318;
+  --playhead: #e5484d;
+  --waveform: #c9c4f5;
+  --waveform-played: var(--accent);
 
+  /* ---------- Shape ---------- */
   --radius: 6px;
+  --radius-full: 9999px; /* round: icon buttons, pills */
+
+  /* ---------- Spacing (4px steps) ---------- */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -32,26 +43,35 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-    'Liberation Mono', monospace;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
+/* ---------- Dark theme (not used for now) ----------
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17181a;
-    --surface: #1f2124;
-    --border: #33363b;
-    --text: #e8e8e6;
-    --text-muted: #9a9c9f;
-    --accent: #63b98c;
-    --accent-contrast: #10231a;
-    --danger: #e08472;
+    --bg: #121216;
+    --surface: #1b1b21;
+    --surface-2: #24242c;
+    --border: #2f2f39;
+    --text: #ececf1;
+    --text-muted: #9a9aa6;
+    --accent: #8b7cff;
+    --accent-contrast: #14121f;
+    --accent-soft: #2a2547;
+    --success: #4cc38a;
+    --warning: #f0a33a;
+    --danger: #ff6b5e;
+    --playhead: #ff6b6b;
+    --waveform: #4a4570;
+    color-scheme: dark;
   }
 }
+*/
 
 *,
 *::before,
@@ -78,7 +98,6 @@ body {
  * you want a full-bleed editor. */
 #root {
   min-height: 100%;
-  padding: var(--space-6);
 }
 
 h1,
@@ -98,8 +117,13 @@ h2 {
   font-size: 1.125rem;
 }
 
+/* Panel section labels. */
 h3 {
-  font-size: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 p {

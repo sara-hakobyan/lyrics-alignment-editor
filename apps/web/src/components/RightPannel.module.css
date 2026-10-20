@@ -1,0 +1,49 @@
+.panel {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  min-width: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+
+.panel h3 {
+  margin: 0;
+}
+
+.number {
+  color: var(--accent);
+}
+
+.text {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.times {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.times dt {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.times dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.times dd.muted {
+  font-family: inherit;
+  color: var(--text-muted);
+}
