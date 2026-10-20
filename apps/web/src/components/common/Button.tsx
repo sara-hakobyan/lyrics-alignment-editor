@@ -5,7 +5,7 @@ import styles from "./Button.module.css";
 
 type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & {
   variant?: "contained" | "outlined" | "text";
-  color?: "primary" | "neutral";
+  color?: "primary" | "neutral" | "danger";
   size?: "small" | "medium";
   prependIcon?: ReactNode;
   appendIcon?: ReactNode;

@@ -26,6 +26,8 @@ All state (track, start times, selected line), the audio ref and the Space-key h
 - **Considered:** React context, which wasn't worth it for components one level deep, and `forwardRef` for the audio. A named prop does the same job with less code.
 - **Trade-off:** `App` passes several props per panel and is still the largest file.
 
+**Changed by developer:** the state moved from `App` into a Zustand store (`alignment/store.ts`): the tracks, each track's stamps (`startTimesByTrack`), the selected line, stamping, saving and loading. Components such as `Topbar` and `AudioScreen` now read the store directly instead of getting everything through `App`, because the developer wanted parts like the Save button to call the store themselves rather than have `App` pass callbacks down. The audio element ref and the Space-key handler still live in `App`, since they need the `<audio>` element.
+
 ## Shared types in `src/types.ts`
 
 `Line`, `Track`, `Segment` and `Alignment` moved from `App.tsx` to `src/types.ts`.
@@ -215,3 +217,41 @@ The spinning `Loader2` and its `@keyframes spin` were defined twice (the full-pa
 
 - **Why:** CSS module keyframe names are local to their file, so one global `@keyframes` couldn't be shared without `:global`. A component keeps the animation in one place.
 - **Considered:** `size` / `color` props. Every caller already styles it with CSS, and inside `Button` it must follow the button's font size.
+
+---
+
+_Task: moving local tracks from localStorage to IndexedDB with Dexie (developer's request), because their audio stopped playing after a reload._
+
+## Saved tracks get an empty `audio_url`; the file is stored separately
+
+`addLocalTrack` saves each track with `audio_url: ""` and puts the audio file in its own `audio` table, keyed by track id. `getLocalTracks` makes a new `blob:` URL from the stored file every time it loads.
+
+- **Why:** a `blob:` URL only works in the tab that created it, so a saved one is always dead after a reload. `Track` requires `audio_url` to be a string, and `""` means "no URL saved; it's built on load."
+- **Considered:** storing the file on the track record itself (`{ ...track, audioFile }`), which would give `EditorTrack` an extra field that backend tracks never have.
+- **Trade-off:** if a track's file were ever missing, the player would just stay empty instead of showing an error. Saving the track and its file in one transaction keeps that from happening.
+
+---
+
+_Task: confirmation modal for "Reset timings" and "Delete" (developer's request; reset clears and saves at once, as the developer chose)._
+
+## `ConfirmModal` awaits `onConfirm` and closes itself
+
+`ConfirmModal` in `components/common` takes `title`, `message`, `confirmLabel`, `danger` and an async `onConfirm`. It shows a spinner on the confirm button while `onConfirm` runs, then closes.
+
+- **Why:** reset and delete both wait on storage, and a spinner shows the click was taken. Callers pass the store action as it is and don't track their own pending state.
+- **Considered:** `onConfirm` returning nothing and the caller closing the modal, which leaves every caller to handle loading and closing.
+- **Trade-off:** the modal closes even if the action failed. The error then shows in the top bar like any other store error.
+
+## `danger` colour added to `Button`
+
+`color` now takes `"danger"`, which sets the same three CSS variables from `--danger`.
+
+- **Why:** the confirm button for actions that can't be undone should be red. This is the first button that needs it, as the earlier Button entry expected.
+
+## `resetTimings` clears the open track and reuses `saveAlignment`
+
+The store action empties the open track's start times, selects its first line, then calls `saveAlignment`.
+
+- **Why:** saving an empty alignment is a normal save, so it gets the same version check, 409 handling and spinner. It works for local and backend tracks alike.
+- **Considered:** a separate "delete alignment" call in the repository, which the backend doesn't have.
+- **Trade-off:** it acts on the open track, not a track passed in. That works because the menu selects the track before any action runs, and the modal blocks switching tracks in between.

@@ -1,11 +1,13 @@
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../alignment/store";
 import type { EditorTrack } from "../types";
 import { cx } from "../utils";
 import ActionMenu, { type Action } from "./common/ActionMenu";
+import ConfirmModal from "./common/ConfirmModal";
 import styles from "./AudioScreen.module.css";
+import AddTrackModal from "./AddTrackModal";
 
 type TrackAction = "edit" | "reset" | "delete";
 
@@ -13,17 +15,21 @@ const trackActions = (
   track: EditorTrack,
   onAction: (action: TrackAction, track: EditorTrack) => void
 ): Action[] => [
-  {
-    label: "Edit",
-    icon: <Pencil />,
-    onClick: () => onAction("edit", track),
-  },
+  // The backend has no routes to edit or delete a track, so only local tracks get them.
+  ...(track.isLocal
+    ? [
+        {
+          label: "Edit",
+          icon: <Pencil />,
+          onClick: () => onAction("edit", track),
+        },
+      ]
+    : []),
   {
     label: "Reset timings",
     icon: <RotateCcw />,
     onClick: () => onAction("reset", track),
   },
-  // The backend has no delete route, so only local tracks can be deleted.
   ...(track.isLocal
     ? [
         {
@@ -42,15 +48,28 @@ type AudioScreenProps = {
 };
 
 export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
-  const { tracks, currentTrackId, selectTrack, setDuration } =
-    useEditorStore(
-      useShallow((s) => ({
-        tracks: s.tracks,
-        currentTrackId: s.track?.id,
-        selectTrack: s.selectTrack,
-        setDuration: s.setDuration,
-      }))
-    );
+  const {
+    tracks,
+    currentTrackId,
+    selectTrack,
+    setDuration,
+    deleteTrack,
+    resetTimings,
+  } = useEditorStore(
+    useShallow((s) => ({
+      tracks: s.tracks,
+      currentTrackId: s.track?.id,
+      selectTrack: s.selectTrack,
+      setDuration: s.setDuration,
+      deleteTrack: s.deleteTrack,
+      resetTimings: s.resetTimings,
+    }))
+  );
+  const [editingTrack, setEditingTrack] = useState<EditorTrack | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    action: "reset" | "delete";
+    track: EditorTrack;
+  } | null>(null);
 
   // Every action works on the track it was chosen for, so that track is selected first.
   const onTrackAction = (action: TrackAction, track: EditorTrack) => {
@@ -58,13 +77,12 @@ export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
 
     switch (action) {
       case "edit":
-        // TODO: open the track in the edit modal
+        setEditingTrack(track);
         break;
+
       case "reset":
-        // TODO: clear all timings of the track
-        break;
       case "delete":
-        // TODO: remove the local track from storage and the list
+        setPendingAction({ action, track });
         break;
     }
   };
@@ -120,6 +138,37 @@ export default function AudioScreen({ audioUrl, audioRef }: AudioScreenProps) {
           Waveform / timeline will go here
         </div>
       </section>
+      {editingTrack && (
+        <AddTrackModal
+          isOpen
+          track={editingTrack}
+          onClose={() => setEditingTrack(null)}
+        />
+      )}
+
+      {pendingAction?.action === "reset" && (
+        <ConfirmModal
+          isOpen
+          onClose={() => setPendingAction(null)}
+          onConfirm={resetTimings}
+          title="Reset timings?"
+          message={`All timings of "${pendingAction.track.title}" will be cleared and saved. This can't be undone.`}
+          confirmLabel="Reset timings"
+          danger
+        />
+      )}
+
+      {pendingAction?.action === "delete" && (
+        <ConfirmModal
+          isOpen
+          onClose={() => setPendingAction(null)}
+          onConfirm={() => deleteTrack(pendingAction.track.id)}
+          title="Delete track?"
+          message={`"${pendingAction.track.title}" and its audio will be removed from this browser. This can't be undone.`}
+          confirmLabel="Delete track"
+          danger
+        />
+      )}
     </main>
   );
 }

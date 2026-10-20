@@ -21,7 +21,7 @@ export type EditorTrack = Track & { isLocal: boolean };
 export type NewTrackInput = {
   title: string;
   artist: string;
-  audioUrl: string;
+  audioFile: File;
   lyrics: string;
 };
 
