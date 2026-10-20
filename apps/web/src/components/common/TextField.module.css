@@ -1,0 +1,34 @@
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.invalid {
+  border-color: var(--danger);
+}
+
+.error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--danger);
+}

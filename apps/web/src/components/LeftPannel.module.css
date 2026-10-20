@@ -1,0 +1,96 @@
+.panel {
+  padding: var(--space-4);
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.header h3 {
+  margin: 0;
+}
+
+.pill {
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--warning);
+  white-space: nowrap;
+}
+
+.lines {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Number on the left; text above, time and actions below. */
+.line {
+  display: grid;
+  grid-template-columns: 1.75em 1fr;
+  column-gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.line:hover {
+  background: var(--surface-2);
+}
+
+.selectedLine,
+.selectedLine:hover {
+  background: var(--accent-soft);
+}
+
+.selectedLine .text {
+  font-weight: 600;
+}
+
+.number {
+  grid-row: span 2;
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.text {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 26px;
+}
+
+.time,
+.untimed {
+  margin-right: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.time {
+  color: var(--success);
+}
+
+.untimed {
+  color: var(--text-muted);
+}
