@@ -1,45 +1,52 @@
 import { useState } from "react";
-import { Lightbulb, Plus } from "lucide-react";
+import { Lightbulb, Save } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../data-alignment/store";
-import AddTrackModal from "./AddTrackModal";
+import { hasUnsavedChanges } from "../data-alignment/timings";
 import Button from "./common/Button";
 import HowItWorksModal from "./HowItWorksModal";
+import TrackSwitcher from "./TrackSwitcher";
 import styles from "./Topbar.module.css";
 
 export default function Topbar() {
-  const { title, error } = useEditorStore(
+  const { error, canSave, isSaving, saveAlignment } = useEditorStore(
     useShallow((s) => ({
-      title: s.track?.title,
       error: s.error,
+      // Save follows the open track, so switching tracks updates it.
+      canSave:
+        !!s.track &&
+        hasUnsavedChanges(
+          s.track,
+          s.startTimesByTrack[s.track.id],
+          s.linesByTrack[s.track.id]
+        ),
+      isSaving: s.isSaving,
+      saveAlignment: s.saveAlignment,
     }))
   );
 
-  const [isAddTrackOpen, setIsAddTrackOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
-
-  const openAddTrack = () => setIsAddTrackOpen(true);
-
-  const closeModal = () => setIsAddTrackOpen(false);
 
   return (
     <header className={styles.topbar}>
+      <TrackSwitcher />
+
+      <div className={styles.spacer}>
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
       <Button
-        variant="outlined"
-        color="neutral"
-        prependIcon={<Plus />}
-        onClick={openAddTrack}
+        prependIcon={<Save />}
+        loading={isSaving}
+        disabled={!canSave}
+        onClick={saveAlignment}
       >
-        Add track
+        Save changes
       </Button>
-
-      <h2 className={styles.title}>{title}</h2>
-
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
 
       <Button
         className={styles.guideButton}
@@ -49,7 +56,6 @@ export default function Topbar() {
         How it works
       </Button>
 
-      <AddTrackModal isOpen={isAddTrackOpen} onClose={closeModal} />
       <HowItWorksModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}

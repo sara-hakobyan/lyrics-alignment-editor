@@ -18,9 +18,9 @@ Some of the implementation may not match what the AI suggested, because some thi
 ## How to try it with your own song
 
 1. `pnpm install && pnpm dev`, then open http://localhost:5173
-2. **Add track** → pick an audio file , paste the lyrics (one line per row), optionally a title and artist
-3. Select the new track in the track list, press play, and press **Space** as each line starts. The selection moves to the next line by itself.
-4. **Save changes** (above the track list), then reload: the track, its audio and its timings are all still there.
+2. Click the track name at the top left, then **Add track** at the bottom of the list → pick an audio file , paste the lyrics (one line per row), optionally a title and artist
+3. Open the track name again and select the new track, press play, and press **Space** as each line starts. The selection moves to the next line by itself.
+4. **Save changes** (in the top bar), then reload: the track, its audio and its timings are all still there.
 
 The **How it works** button in the top bar explains every feature and rule inside the app.
 
@@ -33,6 +33,7 @@ Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics 
 - **Stamping:** Space (or the Stamp button, for touch screens) stamps the selected line with the playback time and selects the next line, so a whole song is one pass of tapping. It only stamps while the track plays, and Space is ignored while typing in a field.
 - **Re-stamping:** click any line to select it, then stamp it again.
 - **End times are calculated:** each line ends where the next timed line starts, and the last one ends with the track.
+- **Waveform:** under the player, the song's waveform fills in as it plays, with a red playhead. Click it to jump to that point.
 
 **Fixing**
 
@@ -54,6 +55,7 @@ Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics 
 
 - Add, edit (title, artist, lyrics) and delete your own tracks. Editing the lyrics keeps the timings of lines whose text didn't change.
 - **Reset timings** clears a track and saves at once. Reset and Delete ask for confirmation.
+- A track's actions are in the ⋮ menu on its row in the track list. The list stays open after an action, so you can carry on with another track.
 - Each track keeps its own unsaved work when you switch between tracks.
 
 ## What I chose
@@ -74,8 +76,8 @@ src/
 │   └── timings.ts          segments from start times, validation, nudge limits, unsaved checks
 ├── hooks/                  useTimingState, useSelectedLine, useIsPlaying
 └── components/
-    ├── Topbar, TrackList, AudioScreen, NowPlaying, LineDetailsPanel, NudgeButtons,
-    │   AddTrackModal, HowItWorksModal
+    ├── Topbar, TrackSwitcher, AudioScreen, Waveform, NowPlaying, LineDetailsPanel,
+    │   NudgeButtons, AddTrackModal, HowItWorksModal
     ├── lyrics/             LyricsPanel, LyricLineRow, LyricsBulkBar, LineTextInput
     └── common/             Button, TextField, Modal, ConfirmModal, ActionMenu, Tooltip, Spinner, UnsavedDot
 ```
@@ -112,6 +114,10 @@ The user only stamps start times. Each line ends where the next timed line start
 
 A small UI kit (`Button`, `TextField`, `Modal`, `ConfirmModal`, `ActionMenu`, `Tooltip`, `Spinner`) and global design tokens for colour, spacing and radius in `styles.css`. Every component uses the same tokens, so spacing, corners and colours stay consistent.
 
+### Waveform
+
+I added a waveform (wavesurfer.js) to make the editor more appealing and the playback easier to follow: you can see where the song gets loud or quiet, how far it has played, and click anywhere to jump there. It draws from the app's existing `<audio>` element instead of playing the song itself, so there is still one player, and stamping, the karaoke readout and the waveform all follow the same playback. It is rebuilt when you switch tracks, and its colours come from the same design tokens as the rest of the app.
+
 ### Smaller things
 
 - Line actions are visible icon buttons on each row, not hidden in a menu, because they're used constantly while fixing timings.
@@ -119,7 +125,7 @@ A small UI kit (`Button`, `TextField`, `Modal`, `ConfirmModal`, `ActionMenu`, `T
 - Loaders stay up for at least 1 second, so a fast response doesn't make them flash.
 - Delete and Edit only exist for local tracks, since the API can't do either.
 - I didn't change the backend.
-- Added dependencies: `zustand` (state), `dexie` (IndexedDB), `lucide-react` (icons).
+- Added dependencies: `zustand` (state), `dexie` (IndexedDB), `lucide-react` (icons), `wavesurfer.js` (waveform).
 
 ## Tests
 
@@ -132,7 +138,7 @@ A small UI kit (`Button`, `TextField`, `Modal`, `ConfirmModal`, `ActionMenu`, `T
 
 Only the bold part of each item was skipped. The rest says what the app does instead.
 
-- **Waveform, dragging blocks to move or trim them, and zoom.** Instead, lines are placed by stamping and fixed by nudging, one line or many at once. End times are calculated from the next line's start, so there are no edges to trim by hand.
+- **Line blocks on the waveform that can be dragged to move or trim them, and zoom.** The waveform is for following playback and seeking. Lines are placed by stamping and fixed by nudging, one line or many at once. End times are calculated from the next line's start, so there are no edges to trim by hand.
 - **Split and merge, adding a single line, reordering lines.** Instead, a line's text can be edited on its row, and a track's whole lyric sheet can be edited (for your own tracks).
 - **Undo/redo history.** Instead, Undo puts a line, or all ticked lines, back to the last save.
 - **Reconciling a 409.** Instead, a conflict shows an error asking to reload. The server's state sent with the 409 isn't merged into the editor.

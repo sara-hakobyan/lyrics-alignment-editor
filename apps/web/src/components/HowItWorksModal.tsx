@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import Button from "./common/Button";
 import Modal from "./common/Modal";
-import Tooltip from "./common/Tooltip";
 import styles from "./HowItWorksModal.module.css";
 
 type HowItWorksModalProps = {
@@ -37,8 +36,8 @@ export default function HowItWorksModal({
           <h3>1. Pick a track</h3>
           <ul>
             <li>
-              Choose a track from the list, or use <b>Add track</b> to bring
-              your own.
+              Click the track name at the top left to switch tracks, or choose{" "}
+              <b>Add track</b> at the bottom of that list to bring your own.
             </li>
             <li>
               A new track needs an audio file and the lyrics, one line per row.
@@ -111,7 +110,10 @@ export default function HowItWorksModal({
               A nudge that would push a line out of the song or out of order is
               disabled.
             </li>
-            <li>A dot marks unsaved changes, on the line and on its track.</li>
+            <li>
+              A dot marks unsaved changes, on the line and on its track in the
+              track list.
+            </li>
           </ul>
         </section>
 
@@ -123,7 +125,8 @@ export default function HowItWorksModal({
               each track's unsaved work.
             </li>
             <li>
-              A track's ⋮ menu has <b>Reset timings</b>, which clears every
+              The ⋮ menu next to the track name has <b>Reset timings</b>,
+              which clears every
               timing and saves straight away.
             </li>
             <li>

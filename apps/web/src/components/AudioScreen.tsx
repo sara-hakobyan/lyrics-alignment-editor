@@ -6,7 +6,7 @@ import { useIsPlaying } from "../hooks/useIsPlaying";
 import { useSelectedLine } from "../hooks/useSelectedLine";
 import Button from "./common/Button";
 import NowPlaying from "./NowPlaying";
-import TrackList from "./TrackList";
+import Waveform from "./Waveform";
 import styles from "./AudioScreen.module.css";
 import Tooltip from "./common/Tooltip";
 
@@ -29,19 +29,20 @@ export default function AudioScreen({ audioRef, onStamp }: AudioScreenProps) {
 
   return (
     <main className={styles.panel}>
-      <TrackList />
-
       <section className={styles.section}>
         <h3>Alignment</h3>
         {/* Blur on play so Space reaches the stamping shortcut instead of the player. */}
-        <audio
-          className={styles.audio}
-          controls
-          src={audioUrl}
-          ref={audioRef}
-          onPlay={(e) => e.currentTarget.blur()}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        />
+        <div className={styles.player}>
+          <audio
+            className={styles.audio}
+            controls
+            src={audioUrl}
+            ref={audioRef}
+            onPlay={(e) => e.currentTarget.blur()}
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          />
+          <Waveform audioRef={audioRef} audioUrl={audioUrl} />
+        </div>
 
         {/* For stamping without a keyboard, e.g. on a touch screen. */}
         {
