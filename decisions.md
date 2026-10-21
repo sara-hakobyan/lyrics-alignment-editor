@@ -152,6 +152,7 @@ The "N untimed" badge is counted in `LeftPannel` from the `lines` and `startTime
 The track cards in `AudioScreen` are plain `<button>`s with their own styles.
 
 - **Why:** they're two-line cards (title + artist) with a "current" state, not actions. Giving `Button` a card variant would add an option only one place uses, which the developer asked to avoid.
+- **Replaced (2026-10-21):** the developer chose a track switcher in the top bar over the cards. `TrackSwitcher`'s button and list rows are still plain `<button>`s, for the same reason.
 
 ## Editor fills the window; panel headings styled once
 
@@ -295,6 +296,8 @@ _Task: review fixes on the timing branch (shared timing helpers, fewer re-render
 ## TrackList's selector returns the unsaved track ids as one string
 
 The selector joins the unsaved track ids into a string, so `useShallow` only re-renders the list when that set changes, not on every stamp. I chose this over caching `getSavedStartTimes` per track, because the cached object would be shared and would have to stay unmutated everywhere.
+
+- **Replaced (2026-10-21):** `TrackList` is gone. The track list now lives in `TrackSwitcher`'s menu, which only renders while it's open, so it reads the drafts directly. The top bar only checks the open track for unsaved changes.
 
 ## `canShift` takes the lines that are broken now as a parameter
 

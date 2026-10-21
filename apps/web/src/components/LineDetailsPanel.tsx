@@ -37,38 +37,29 @@ export default function LineDetailsPanel({
 
   return (
     <aside className={styles.panel}>
-      <div className={styles.header}>
-        <h3>
-          Selected line
-          {selectedLine && (
-            <span className={styles.number}> #{lineIndex + 1}</span>
-          )}
-        </h3>
-
-        <Tooltip content={"Play from this line's start"}>
-          <Button
-            variant="outlined"
-            size="small"
-            icon={<Play />}
-            aria-label="Play this line"
-            disabled={!selectedLine || !isTimed}
-            onClick={() => selectedLine && onPlayLine(selectedLine.id)}
-          />
-        </Tooltip>
-      </div>
+      <h3>
+        Selected line
+        {selectedLine && (
+          <span className={styles.number}>#{lineIndex + 1}</span>
+        )}
+      </h3>
 
       <p className={styles.text}>{selectedLine?.text ?? "No line selected"}</p>
 
+      {/* Start and end as two tiles side by side. */}
       <dl className={styles.times}>
-        <dt>Start</dt>
-        <dd className={isTimed ? undefined : styles.muted}>
-          {formatMs(startMs)}
-        </dd>
-
-        <dt>End</dt>
-        <dd className={endMs !== undefined ? undefined : styles.muted}>
-          {formatMs(endMs)}
-        </dd>
+        <div className={styles.time}>
+          <dt>Start</dt>
+          <dd className={isTimed ? undefined : styles.muted}>
+            {formatMs(startMs)}
+          </dd>
+        </div>
+        <div className={styles.time}>
+          <dt>End</dt>
+          <dd className={endMs !== undefined ? undefined : styles.muted}>
+            {formatMs(endMs)}
+          </dd>
+        </div>
       </dl>
 
       {timingIssue && <p className={styles.issue}>{timingIssue}</p>}
@@ -86,17 +77,32 @@ export default function LineDetailsPanel({
         </div>
       )}
 
-      {selectedLine && hasChanges && (
-        <Button
-          variant="outlined"
-          color="neutral"
-          prependIcon={<Undo2 />}
-          title="Go back to the last saved time and text"
-          onClick={() => resetLines([selectedLine.id])}
-        >
-          Undo
-        </Button>
-      )}
+      <div className={styles.actions}>
+        <Tooltip content={"Play from this line's start"}>
+          <Button
+            variant="outlined"
+            className={styles.action}
+            prependIcon={<Play />}
+            disabled={!selectedLine || !isTimed}
+            onClick={() => selectedLine && onPlayLine(selectedLine.id)}
+          >
+            Play this line
+          </Button>
+        </Tooltip>
+
+        {selectedLine && hasChanges && (
+          <Button
+            variant="outlined"
+            color="neutral"
+            className={styles.action}
+            prependIcon={<Undo2 />}
+            title="Go back to the last saved time and text"
+            onClick={() => resetLines([selectedLine.id])}
+          >
+            Undo changes
+          </Button>
+        )}
+      </div>
     </aside>
   );
 }

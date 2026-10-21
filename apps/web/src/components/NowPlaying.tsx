@@ -1,4 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
+import { Music } from "lucide-react";
 import { useIsPlaying } from "../hooks/useIsPlaying";
 import { useTimingState } from "../hooks/useTimingState";
 import { cx } from "../utils";
@@ -48,6 +49,9 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
   if (segments.length === 0) {
     return (
       <div className={styles.readout}>
+        <span className={styles.emptyIcon}>
+          <Music />
+        </span>
         <p className={styles.empty}>
           Nothing is timed yet. Stamped lines will light up here as they're
           sung.
@@ -60,6 +64,9 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
   if (index === -1) {
     return (
       <div className={styles.readout}>
+        <span className={styles.emptyIcon}>
+          <Music />
+        </span>
         <p className={styles.empty}>
           {isPlaying
             ? "♪ No timed line at this point of the song."
@@ -73,6 +80,7 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
 
   return (
     <div className={styles.readout}>
+      <span className={styles.label}>Now playing</span>
       {context.map((line, i) => (
         <p
           key={line?.id ?? `empty-${i}`}

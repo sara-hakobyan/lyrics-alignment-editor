@@ -1,59 +1,87 @@
 .panel {
   display: grid;
   align-content: start;
-  justify-items: start;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-4);
   min-width: 0;
   background: var(--surface);
   border-left: 1px solid var(--border);
 }
 
+.panel h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+/* The line number as a purple pill next to the heading. */
 .number {
-  color: var(--accent);
+  padding: 2px var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-radius: var(--radius-full);
 }
 
 .text {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.0625rem;
+  font-weight: 600;
   line-height: 1.4;
   color: var(--text);
 }
 
 .times {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
   margin: 0;
 }
 
-.times dt {
-  font-size: 0.8125rem;
+.time {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.time dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.times dd {
+.time dd {
   margin: 0;
   font-family: var(--font-mono);
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
 }
 
-.times dd.muted {
+.time dd.muted {
   font-family: inherit;
   color: var(--text-muted);
 }
 
 .issue {
   margin: 0;
+  padding: var(--space-2) var(--space-3);
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-radius: var(--radius);
 }
 
 .adjust {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .adjustLabel {
@@ -61,21 +89,34 @@
   color: var(--text-muted);
 }
 
-/* Heading on the left, Play on the right. */
-.header {
-  justify-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Four equal steps in one row. */
+.nudges {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-2);
 }
 
-.header h3 {
-  margin: 0;
+.nudges button {
+  min-height: 36px;
 }
 
-.nudges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+/* Hover lifts the step and tints it, so it's clear it can be pressed. */
+.nudges button:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Play and Undo, stacked at full width under the steps. */
+.actions {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.action {
+  width: 100%;
+  min-height: 40px;
 }

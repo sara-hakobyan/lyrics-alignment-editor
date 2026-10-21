@@ -7,14 +7,10 @@
   border-bottom: 1px solid var(--border);
 }
 
-.title {
+/* Pushes Save and How it works to the right; holds the error message. */
+.spacer {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  font-size: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Gradient so it's noticed first. The class is doubled to win over the

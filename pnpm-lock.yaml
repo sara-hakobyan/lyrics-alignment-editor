@@ -28,6 +28,9 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      wavesurfer.js:
+        specifier: ^8.0.3
+        version: 8.0.3
       zustand:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@18.3.31)(react@18.3.1)
@@ -653,6 +656,9 @@ packages:
       terser:
         optional: true
 
+  wavesurfer.js@8.0.3:
+    resolution: {integrity: sha512-DLRSw/NoIlyFxMzmiGlwGJaEn44p8DiCRyKYjbPxGa3QjdTrCxa0CvAH+/TEijrzcZ/w2GVt8wM80WFsPtnPVw==}
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
@@ -1182,6 +1188,8 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
       fsevents: 2.3.3
+
+  wavesurfer.js@8.0.3: {}
 
   yallist@3.1.1: {}
 

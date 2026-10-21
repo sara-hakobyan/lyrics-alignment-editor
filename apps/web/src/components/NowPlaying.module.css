@@ -2,13 +2,31 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: var(--space-2);
-  min-height: 140px;
-  padding: var(--space-4);
+  gap: var(--space-3);
+  min-height: 260px;
+  padding: var(--space-8) var(--space-6);
   text-align: center;
-  background: var(--surface);
+  /* A faint tint at the bottom, so the box doesn't read as an empty white card. */
+  background: linear-gradient(
+    180deg,
+    var(--surface) 40%,
+    color-mix(in srgb, var(--accent-soft) 60%, var(--surface))
+  );
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 12px;
+}
+
+/* "Now playing" pill above the lines. */
+.label {
+  margin-bottom: var(--space-2);
+  padding: 2px 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-full);
 }
 
 .line {
@@ -17,18 +35,37 @@
 }
 
 .context {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--text-muted);
 }
 
 .current {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--accent);
 }
 
+/* Round music icon above the empty-state text. */
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-full);
+}
+
+.emptyIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
 .empty {
+  max-width: 36ch;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--text-muted);
 }
