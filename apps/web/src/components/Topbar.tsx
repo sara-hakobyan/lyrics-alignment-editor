@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Save } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../alignment/store";
 import AddTrackModal from "./AddTrackModal";
@@ -7,12 +7,10 @@ import Button from "./common/Button";
 import styles from "./Topbar.module.css";
 
 export default function Topbar() {
-  const { title, saveAlignment, error, isSaving } = useEditorStore(
+  const { title, error } = useEditorStore(
     useShallow((s) => ({
       title: s.track?.title,
-      saveAlignment: s.saveAlignment,
       error: s.error,
-      isSaving: s.isSaving,
     }))
   );
 
@@ -40,10 +38,6 @@ export default function Topbar() {
           {error}
         </p>
       )}
-
-      <Button prependIcon={<Save />} loading={isSaving} onClick={saveAlignment}>
-        Save Changes
-      </Button>
 
       <AddTrackModal isOpen={isAddTrackOpen} onClose={closeModal} />
     </header>

@@ -11,6 +11,8 @@ The decisions the AI agent made on its own following my commands are logged in [
 3. Select the new track, press play, and press **Space** as each line starts. The selection moves to the next line by itself.
 4. **Save Changes**, then reload: the track, its audio and its timings are all still there.
 
+Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics pasted in. I added it, timed every line, saved and reloaded, and the audio and all timings were kept.
+
 ## What I chose
 
 ### Architecture

@@ -22,8 +22,14 @@ function errorMessage(e: unknown): string {
     const body = e.body as { hint?: string } | undefined;
     return body?.hint ?? e.message;
   }
-  return String(e);
+  return e instanceof Error ? e.message : String(e);
 }
+
+// The title and artist from the form, with defaults for blank fields.
+const trackInfo = (input: NewTrackInput) => ({
+  title: input.title.trim() || "Untitled track",
+  artist: input.artist.trim() || "Unknown artist",
+});
 
 // Runs the call and turns its result or thrown error into a Result.
 async function toResult<T>(call: () => Promise<T>): Promise<Result<T>> {
@@ -58,8 +64,7 @@ export function createLocalTrack(
   return toResult(async () => {
     const track: EditorTrack = {
       id: crypto.randomUUID(),
-      title: input.title.trim() || "Untitled track",
-      artist: input.artist.trim() || "Unknown artist",
+      ...trackInfo(input),
       duration_seconds: 0, // unknown until the audio loads
       audio_url: URL.createObjectURL(input.audioFile),
       lines: parseLyrics(input.lyrics),
@@ -91,8 +96,7 @@ export function updateLocalTrack(
   return toResult(async () => {
     const updated: EditorTrack = {
       ...track,
-      title: input.title.trim() || "Untitled track",
-      artist: input.artist.trim() || "Unknown artist",
+      ...trackInfo(input),
       lines: reuseLineIds(track.lines, parseLyrics(input.lyrics)),
     };
     await localRepository.updateLocalTrack(updated);

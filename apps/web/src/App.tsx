@@ -1,51 +1,29 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Topbar from "./components/Topbar";
 import LyricsPanel from "./components/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
 import LineDetailsPanel from "./components/LineDetailsPanel";
 import Spinner from "./components/common/Spinner";
 import styles from "./App.module.css";
-import { buildSegments } from "./alignment/segments";
 import { useEditorStore } from "./alignment/store";
+import { useTimingState } from "./hooks/useTimingState";
 import { useShallow } from "zustand/shallow";
 
-// Same object every time, so the store selector doesn't see a "change" when a track has no stamps.
-const NO_START_TIMES: Record<string, number> = {};
-
 export default function App() {
-  const {
-    track,
-    startTimesMs,
-    selectedLineId,
-    error,
-    loadTracks,
-    selectLine,
-    stampLine,
-    clearLineTiming,
-  } = useEditorStore(
+  const { error, loadTracks, selectLine, stampLine } = useEditorStore(
     useShallow((s) => ({
-      track: s.track,
-      startTimesMs: s.track
-        ? s.startTimesByTrack[s.track.id] ?? NO_START_TIMES
-        : NO_START_TIMES,
-      selectedLineId: s.selectedLineId,
       error: s.error,
       loadTracks: s.loadTracks,
       selectLine: s.selectLine,
       stampLine: s.stampLine,
-      clearLineTiming: s.clearLineTiming,
     }))
   );
+  const { track, startTimesMs } = useTimingState();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     loadTracks();
   }, [loadTracks]);
-
-  const endMsByLineId = useMemo(() => {
-    const segments = track ? buildSegments(track, startTimesMs) : [];
-    return new Map(segments.map((s) => [s.line_id, s.end_ms]));
-  }, [track, startTimesMs]);
 
   const playLine = (lineId: string) => {
     const audio = audioRef.current;
@@ -96,34 +74,14 @@ export default function App() {
     );
   }
 
-  const selectedIndex = track.lines.findIndex(
-    (line) => line.id === selectedLineId
-  );
-  const selectedLine = track.lines[selectedIndex];
-
   return (
     <div className={styles.editor}>
       <Topbar />
 
       <div className={styles.editorContent}>
-        <LyricsPanel
-          lines={track.lines}
-          startTimesMs={startTimesMs}
-          selectedLineId={selectedLineId}
-          onSelectLine={selectLine}
-          onPlayLine={playLine}
-          onClearLineTiming={clearLineTiming}
-        />
-
-        <AudioScreen audioUrl={track.audio_url} audioRef={audioRef} />
-
-        <LineDetailsPanel
-          selectedLine={selectedLine}
-          lineNumber={selectedLine ? selectedIndex + 1 : undefined}
-          startMs={selectedLine ? startTimesMs[selectedLine.id] : undefined}
-          endMs={selectedLine ? endMsByLineId.get(selectedLine.id) : undefined}
-          onClearLineTiming={clearLineTiming}
-        />
+        <LyricsPanel onPlayLine={playLine} />
+        <AudioScreen audioRef={audioRef} />
+        <LineDetailsPanel onPlayLine={playLine} />
       </div>
     </div>
   );

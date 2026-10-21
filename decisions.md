@@ -4,6 +4,8 @@ This file logs the technical and architectural decisions that the AI agent (Clau
 
 Decisions and requirements that came from the developer are not recorded here; those go in the developer's own notes.
 
+Every solution was discussed with the developer first. A decision is added to this file only after the developer approved the suggestion.
+
 Each entry has this format:
 
 ```
@@ -255,3 +257,45 @@ The store action empties the open track's start times, selects its first line, t
 - **Why:** saving an empty alignment is a normal save, so it gets the same version check, 409 handling and spinner. It works for local and backend tracks alike.
 - **Considered:** a separate "delete alignment" call in the repository, which the backend doesn't have.
 - **Trade-off:** it acts on the open track, not a track passed in. That works because the menu selects the track before any action runs, and the modal blocks switching tracks in between.
+
+---
+
+_Task: bulk nudging in the lyrics pane (developer's request: checkboxes, a bulk bar, ±0.5 steps, never past the song's duration). The ±0.1 steps, shift-click ranges and the sticky bar were in the design the developer approved._
+
+## Checked lines are their own store state, apart from the stamping selection
+
+The store has `checkedLineIds` next to `selectedLineId`. Opening another track clears it.
+
+- **Why:** stamping moves `selectedLineId` forward on every Space press. If checking reused it, stamping would keep changing what a bulk nudge applies to.
+- **Trade-off:** two kinds of "selected" in one pane. The rows show them differently: a checked row is a lighter tint, and the stamping row is drawn over it.
+
+## The shift-click anchor lives in `LyricsPanel`, not the store
+
+The panel keeps the last checkbox clicked in a ref and works out the range itself, then passes the full id list to `setCheckedLineIds`.
+
+- **Why:** the anchor only matters for the next click, and nothing else reads it. Keeping it in the store would add state that isn't part of the editor's data.
+- **Trade-off:** the anchor is lost if the panel remounts, so the next shift-click acts like a plain click.
+
+---
+
+_Task: highlighting the line that's playing, in the box under the audio player where the waveform placeholder was (developer's request)._
+
+## `NowPlaying` is a separate component with its own state
+
+I made the readout its own component instead of adding it to `AudioScreen`. It follows the audio itself and keeps the playing line in its own state, not in the store. It only re-renders when the playing line changes.
+
+- **Why:** the playback position changes all the time while the song plays. Kept local, only that small box re-renders, not the track list, the panels or anything else reading the store.
+- **Considered:** the playback time in the Zustand store, so other features could share it, at the cost of re-rendering the app throughout playback.
+- **Trade-off:** another component that needs the playback position, like a future waveform playhead, has to read it from the audio element too.
+
+---
+
+_Task: review fixes on the timing branch (shared timing helpers, fewer re-renders, dropping lodash)._
+
+## TrackList's selector returns the unsaved track ids as one string
+
+The selector joins the unsaved track ids into a string, so `useShallow` only re-renders the list when that set changes, not on every stamp. I chose this over caching `getSavedStartTimes` per track, because the cached object would be shared and would have to stay unmutated everywhere.
+
+## `canShift` takes the lines that are broken now as a parameter
+
+App passes its memoized `issueByLineId` and the store builds the set once per nudge, so the eight nudge buttons no longer rebuild and re-check all the segments on every render.
