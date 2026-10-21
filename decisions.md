@@ -287,3 +287,15 @@ I made the readout its own component instead of adding it to `AudioScreen`. It f
 - **Why:** the playback position changes all the time while the song plays. Kept local, only that small box re-renders, not the track list, the panels or anything else reading the store.
 - **Considered:** the playback time in the Zustand store, so other features could share it, at the cost of re-rendering the app throughout playback.
 - **Trade-off:** another component that needs the playback position, like a future waveform playhead, has to read it from the audio element too.
+
+---
+
+_Task: review fixes on the timing branch (shared timing helpers, fewer re-renders, dropping lodash)._
+
+## TrackList's selector returns the unsaved track ids as one string
+
+The selector joins the unsaved track ids into a string, so `useShallow` only re-renders the list when that set changes, not on every stamp. I chose this over caching `getSavedStartTimes` per track, because the cached object would be shared and would have to stay unmutated everywhere.
+
+## `canShift` takes the lines that are broken now as a parameter
+
+App passes its memoized `issueByLineId` and the store builds the set once per nudge, so the eight nudge buttons no longer rebuild and re-check all the segments on every render.

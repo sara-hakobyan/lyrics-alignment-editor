@@ -49,8 +49,11 @@ export default function AddTrackModal({
     if (!canSubmit) return;
 
     const input = { title: trackTitle, artist, audioFile, lyrics };
-    if (track) await updateTrack(track, input);
-    else await addTrack(input);
+    const isDone = track
+      ? await updateTrack(track, input)
+      : await addTrack(input);
+    // On failure the form stays open with what was typed; the error shows in the top bar.
+    if (!isDone) return;
 
     setTrackTitle("");
 
@@ -65,7 +68,9 @@ export default function AddTrackModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} width={520}>
       <div className={styles.form}>
-        <h2 className={styles.formTitle}>Add a track</h2>
+        <h2 className={styles.formTitle}>
+          {track ? "Edit track" : "Add a track"}
+        </h2>
 
         <TextField
           label="Title"

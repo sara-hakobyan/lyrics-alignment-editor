@@ -1,6 +1,9 @@
 import { useRef } from "react";
 import { Eraser, Play, X } from "lucide-react";
-import type { Line } from "../types";
+import { useShallow } from "zustand/shallow";
+import { useEditorStore } from "../alignment/store";
+import { isLineUnsaved } from "../alignment/timings";
+import { useTimingState } from "../hooks/useTimingState";
 import { cx, formatMs } from "../utils";
 import Button from "./common/Button";
 import UnsavedDot from "./common/UnsavedDot";
@@ -8,37 +11,31 @@ import NudgeButtons from "./NudgeButtons";
 import styles from "./LyricsPanel.module.css";
 
 type LyricsPanelProps = {
-  lines: Line[];
-  startTimesMs: Record<string, number>;
-  // The last saved start times; a line that differs gets an unsaved dot.
-  savedStartTimesMs: Record<string, number>;
-  selectedLineId: string | null;
-  onSelectLine: (lineId: string) => void;
   onPlayLine: (lineId: string) => void;
-  onClearLineTiming: (lineId: string) => void;
-  // Line id → what's wrong with its timing.
-  timingIssues: Map<string, string>;
-  checkedLineIds: string[];
-  onCheckedLinesChange: (lineIds: string[]) => void;
-  // False for a step that would leave the track or break a line's timing.
-  canNudge: (deltaMs: number) => boolean;
-  onNudge: (deltaMs: number) => void;
 };
 
-export default function LyricsPanel({
-  lines,
-  startTimesMs,
-  savedStartTimesMs,
-  selectedLineId,
-  onSelectLine,
-  onPlayLine,
-  onClearLineTiming,
-  timingIssues,
-  checkedLineIds,
-  onCheckedLinesChange,
-  canNudge,
-  onNudge,
-}: LyricsPanelProps) {
+export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
+  const {
+    selectedLineId,
+    checkedLineIds,
+    selectLine,
+    clearLineTiming,
+    setCheckedLineIds,
+    nudgeLines,
+  } = useEditorStore(
+    useShallow((s) => ({
+      selectedLineId: s.selectedLineId,
+      checkedLineIds: s.checkedLineIds,
+      selectLine: s.selectLine,
+      clearLineTiming: s.clearLineTiming,
+      setCheckedLineIds: s.setCheckedLineIds,
+      nudgeLines: s.nudgeLines,
+    }))
+  );
+  const { track, startTimesMs, savedStartTimesMs, issueByLineId, canNudge } =
+    useTimingState();
+  const lines = track?.lines ?? [];
+
   // The last checkbox clicked, where a shift-click range starts.
   const anchorLineIdRef = useRef<string | null>(null);
 
@@ -56,9 +53,9 @@ export default function LyricsPanel({
       const [from, to] =
         index < anchorIndex ? [index, anchorIndex] : [anchorIndex, index];
       const range = lines.slice(from, to + 1).map((line) => line.id);
-      onCheckedLinesChange([...new Set([...checkedLineIds, ...range])]);
+      setCheckedLineIds([...new Set([...checkedLineIds, ...range])]);
     } else {
-      onCheckedLinesChange(
+      setCheckedLineIds(
         checkedLineIds.includes(lineId)
           ? checkedLineIds.filter((id) => id !== lineId)
           : [...checkedLineIds, lineId]
@@ -83,8 +80,8 @@ export default function LyricsPanel({
               {checkedLineIds.length} selected
             </span>
             <NudgeButtons
-              canNudge={canNudge}
-              onNudge={onNudge}
+              canNudge={(ms) => canNudge(ms, checkedLineIds)}
+              onNudge={(ms) => nudgeLines(ms, checkedLineIds)}
               subject="the selected lines"
             />
             <Button
@@ -92,7 +89,7 @@ export default function LyricsPanel({
               size="small"
               icon={<X />}
               aria-label="Clear selection"
-              onClick={() => onCheckedLinesChange([])}
+              onClick={() => setCheckedLineIds([])}
             />
           </div>
           <p className={styles.bulkHint}>
@@ -111,7 +108,7 @@ export default function LyricsPanel({
           return (
             <li
               key={line.id}
-              onClick={() => onSelectLine(line.id)}
+              onClick={() => selectLine(line.id)}
               className={cx(
                 styles.line,
                 isChecked && styles.checkedLine,
@@ -134,7 +131,9 @@ export default function LyricsPanel({
               <span className={styles.text}>{line.text}</span>
 
               <div className={styles.meta}>
-                {startMs !== savedStartTimesMs[line.id] && <UnsavedDot />}
+                {isLineUnsaved(startTimesMs, savedStartTimesMs, line.id) && (
+                  <UnsavedDot />
+                )}
                 <span className={isTimed ? styles.time : styles.untimed}>
                   {formatMs(startMs)}
                 </span>
@@ -160,15 +159,17 @@ export default function LyricsPanel({
                       title="Clear timing"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onClearLineTiming(line.id);
+                        clearLineTiming(line.id);
                       }}
                     />
                   </>
                 )}
               </div>
 
-              {timingIssues.has(line.id) && (
-                <span className={styles.issue}>{timingIssues.get(line.id)}</span>
+              {issueByLineId.has(line.id) && (
+                <span className={styles.issue}>
+                  {issueByLineId.get(line.id)}
+                </span>
               )}
             </li>
           );

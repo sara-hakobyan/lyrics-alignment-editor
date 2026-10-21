@@ -1,38 +1,48 @@
 import { Play, Undo2 } from "lucide-react";
-import type { Line } from "../types";
+import { useShallow } from "zustand/shallow";
+import { useEditorStore } from "../alignment/store";
+import { isLineUnsaved } from "../alignment/timings";
+import { useTimingState } from "../hooks/useTimingState";
 import { formatMs } from "../utils";
 import Button from "./common/Button";
 import NudgeButtons from "./NudgeButtons";
 import styles from "./LineDetailsPanel.module.css";
 
 type LineDetailsPanelProps = {
-  selectedLine: Line | undefined;
-  lineNumber: number | undefined;
-  startMs: number | undefined;
-  endMs: number | undefined;
-  // What's wrong with the selected line's timing, if anything.
-  timingIssue: string | undefined;
-  // Whether the start differs from the last save, so there's something to undo.
-  isChanged: boolean;
   onPlayLine: (lineId: string) => void;
-  onRevertLine: (lineId: string) => void;
-  // False for a step that would leave the track or break a line's timing.
-  canNudge: (deltaMs: number) => boolean;
-  onNudge: (deltaMs: number) => void;
 };
 
 export default function LineDetailsPanel({
-  selectedLine,
-  lineNumber,
-  startMs,
-  endMs,
-  timingIssue,
-  isChanged,
   onPlayLine,
-  onRevertLine,
-  canNudge,
-  onNudge,
 }: LineDetailsPanelProps) {
+  const { selectedLineId, revertLine, nudgeLines } = useEditorStore(
+    useShallow((s) => ({
+      selectedLineId: s.selectedLineId,
+      revertLine: s.revertLine,
+      nudgeLines: s.nudgeLines,
+    }))
+  );
+  const {
+    track,
+    startTimesMs,
+    savedStartTimesMs,
+    endMsByLineId,
+    issueByLineId,
+    canNudge,
+  } = useTimingState();
+
+  const lineIndex =
+    track?.lines.findIndex((line) => line.id === selectedLineId) ?? -1;
+  const selectedLine = track?.lines[lineIndex];
+  const startMs = selectedLine ? startTimesMs[selectedLine.id] : undefined;
+  const endMs = selectedLine ? endMsByLineId.get(selectedLine.id) : undefined;
+  const timingIssue = selectedLine
+    ? issueByLineId.get(selectedLine.id)
+    : undefined;
+  // Whether the start differs from the last save, so there's something to undo.
+  const isUnsaved =
+    !!selectedLine &&
+    isLineUnsaved(startTimesMs, savedStartTimesMs, selectedLine.id);
   const isTimed = startMs !== undefined;
 
   return (
@@ -40,8 +50,8 @@ export default function LineDetailsPanel({
       <div className={styles.header}>
         <h3>
           Selected line
-          {lineNumber !== undefined && (
-            <span className={styles.number}> #{lineNumber}</span>
+          {selectedLine && (
+            <span className={styles.number}> #{lineIndex + 1}</span>
           )}
         </h3>
 
@@ -50,7 +60,9 @@ export default function LineDetailsPanel({
           size="small"
           icon={<Play />}
           aria-label="Play this line"
-          title={isTimed ? "Play from this line's start" : "Stamp this line first"}
+          title={
+            isTimed ? "Play from this line's start" : "Stamp this line first"
+          }
           disabled={!selectedLine || !isTimed}
           onClick={() => selectedLine && onPlayLine(selectedLine.id)}
         />
@@ -77,21 +89,21 @@ export default function LineDetailsPanel({
           <span className={styles.adjustLabel}>Adjust start (seconds)</span>
           <div className={styles.nudges}>
             <NudgeButtons
-              canNudge={canNudge}
-              onNudge={onNudge}
+              canNudge={(ms) => canNudge(ms, [selectedLine.id])}
+              onNudge={(ms) => nudgeLines(ms, [selectedLine.id])}
               subject="this line"
             />
           </div>
         </div>
       )}
 
-      {selectedLine && isChanged && (
+      {selectedLine && isUnsaved && (
         <Button
           variant="outlined"
           color="neutral"
           prependIcon={<Undo2 />}
           title="Go back to the last saved time"
-          onClick={() => onRevertLine(selectedLine.id)}
+          onClick={() => revertLine(selectedLine.id)}
         >
           Undo
         </Button>

@@ -1,7 +1,6 @@
 import Button from "./common/Button";
 import styles from "./NudgeButtons.module.css";
 
-// The nudge steps, in ms.
 const NUDGE_STEPS_MS = [-500, -100, 100, 500];
 
 const formatStep = (ms: number) =>

@@ -1,22 +1,19 @@
 import { useEffect, useState, type RefObject } from "react";
-import type { Line, Segment } from "../types";
+import { useTimingState } from "../hooks/useTimingState";
 import { cx } from "../utils";
 import styles from "./NowPlaying.module.css";
 
 type NowPlayingProps = {
   audioRef: RefObject<HTMLAudioElement>;
-  lines: Line[];
-  segments: Segment[];
 };
 
 // Karaoke-style readout: the line being sung in the middle, with the lines
 // before and after it for context.
-export default function NowPlaying({
-  audioRef,
-  lines,
-  segments,
-}: NowPlayingProps) {
+export default function NowPlaying({ audioRef }: NowPlayingProps) {
+  const { track, segments } = useTimingState();
+  const lines = track?.lines ?? [];
   const [playingLineId, setPlayingLineId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Follows the audio every frame while it plays. State only changes when the
   // playing line does, so this re-renders a few times per line, not 60 times a second.
@@ -36,10 +33,12 @@ export default function NowPlaying({
     };
     const start = () => {
       cancelAnimationFrame(frame);
+      setIsPlaying(true);
       loop();
     };
     const stop = () => {
       cancelAnimationFrame(frame);
+      setIsPlaying(false);
       update();
     };
 
@@ -65,16 +64,22 @@ export default function NowPlaying({
     return (
       <div className={styles.readout}>
         <p className={styles.empty}>
-          Nothing is timed yet. Stamped lines will light up here as they're sung.
+          Nothing is timed yet. Stamped lines will light up here as they're
+          sung.
         </p>
       </div>
     );
   }
 
+  // Playing but between timed lines: the intro, a gap, or after the last line.
   if (index === -1) {
     return (
       <div className={styles.readout}>
-        <p className={styles.empty}>Play the track to see the current line.</p>
+        <p className={styles.empty}>
+          {isPlaying
+            ? "♪ No timed line at this point of the song."
+            : "Play the track to see the current line."}
+        </p>
       </div>
     );
   }

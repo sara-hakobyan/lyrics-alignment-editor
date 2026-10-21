@@ -1,76 +1,29 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Topbar from "./components/Topbar";
 import LyricsPanel from "./components/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
 import LineDetailsPanel from "./components/LineDetailsPanel";
 import Spinner from "./components/common/Spinner";
 import styles from "./App.module.css";
-import {
-  buildSegments,
-  findTimingIssues,
-  canShift,
-  savedStartTimes,
-} from "./alignment/segments";
 import { useEditorStore } from "./alignment/store";
+import { useTimingState } from "./hooks/useTimingState";
 import { useShallow } from "zustand/shallow";
 
-// Same object every time, so the store selector doesn't see a "change" when a track has no stamps.
-const NO_START_TIMES: Record<string, number> = {};
-
 export default function App() {
-  const {
-    track,
-    startTimesMs,
-    selectedLineId,
-    checkedLineIds,
-    error,
-    loadTracks,
-    selectLine,
-    stampLine,
-    clearLineTiming,
-    revertLine,
-    setCheckedLineIds,
-    nudgeLines,
-  } = useEditorStore(
+  const { error, loadTracks, selectLine, stampLine } = useEditorStore(
     useShallow((s) => ({
-      track: s.track,
-      startTimesMs: s.track
-        ? s.startTimesByTrack[s.track.id] ?? NO_START_TIMES
-        : NO_START_TIMES,
-      selectedLineId: s.selectedLineId,
-      checkedLineIds: s.checkedLineIds,
       error: s.error,
       loadTracks: s.loadTracks,
       selectLine: s.selectLine,
       stampLine: s.stampLine,
-      clearLineTiming: s.clearLineTiming,
-      revertLine: s.revertLine,
-      setCheckedLineIds: s.setCheckedLineIds,
-      nudgeLines: s.nudgeLines,
     }))
   );
+  const { track, startTimesMs } = useTimingState();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     loadTracks();
   }, [loadTracks]);
-
-  const { segments, endMsByLineId, issueByLineId } = useMemo(() => {
-    const segments = track ? buildSegments(track, startTimesMs) : [];
-    return {
-      segments,
-      endMsByLineId: new Map(segments.map((s) => [s.line_id, s.end_ms])),
-      issueByLineId: new Map(
-        findTimingIssues(segments).map((issue) => [issue.lineId, issue.message])
-      ),
-    };
-  }, [track, startTimesMs]);
-
-  // The last saved start times, which the right panel's Undo goes back to.
-  const savedStartTimesMs = useMemo(
-    () => (track ? savedStartTimes(track) : NO_START_TIMES),
-    [track]
-  );
 
   const playLine = (lineId: string) => {
     const audio = audioRef.current;
@@ -121,59 +74,14 @@ export default function App() {
     );
   }
 
-  const selectedIndex = track.lines.findIndex(
-    (line) => line.id === selectedLineId
-  );
-  const selectedLine = track.lines[selectedIndex];
-  const canNudgeChecked = (ms: number) =>
-    canShift(track, startTimesMs, checkedLineIds, ms);
-  const canNudgeSelected = (ms: number) =>
-    !!selectedLine && canShift(track, startTimesMs, [selectedLine.id], ms);
-
   return (
     <div className={styles.editor}>
       <Topbar />
 
       <div className={styles.editorContent}>
-        <LyricsPanel
-          lines={track.lines}
-          startTimesMs={startTimesMs}
-          selectedLineId={selectedLineId}
-          onSelectLine={selectLine}
-          onPlayLine={playLine}
-          onClearLineTiming={clearLineTiming}
-          savedStartTimesMs={savedStartTimesMs}
-          timingIssues={issueByLineId}
-          checkedLineIds={checkedLineIds}
-          onCheckedLinesChange={setCheckedLineIds}
-          canNudge={canNudgeChecked}
-          onNudge={nudgeLines}
-        />
-
-        <AudioScreen
-          audioUrl={track.audio_url}
-          audioRef={audioRef}
-          lines={track.lines}
-          segments={segments}
-        />
-
-        <LineDetailsPanel
-          selectedLine={selectedLine}
-          lineNumber={selectedLine ? selectedIndex + 1 : undefined}
-          startMs={selectedLine ? startTimesMs[selectedLine.id] : undefined}
-          endMs={selectedLine ? endMsByLineId.get(selectedLine.id) : undefined}
-          timingIssue={
-            selectedLine ? issueByLineId.get(selectedLine.id) : undefined
-          }
-          isChanged={
-            !!selectedLine &&
-            startTimesMs[selectedLine.id] !== savedStartTimesMs[selectedLine.id]
-          }
-          onPlayLine={playLine}
-          onRevertLine={revertLine}
-          canNudge={canNudgeSelected}
-          onNudge={(ms) => selectedLine && nudgeLines(ms, [selectedLine.id])}
-        />
+        <LyricsPanel onPlayLine={playLine} />
+        <AudioScreen audioRef={audioRef} />
+        <LineDetailsPanel onPlayLine={playLine} />
       </div>
     </div>
   );
