@@ -67,6 +67,10 @@ export default function HowItWorksModal({
               the song.
             </li>
             <li>Stamping only works while the track plays.</li>
+            <li>
+              The waveform under the player fills in as the song plays. Click
+              it to jump to that point.
+            </li>
             <li>Missed one? Click the line to select it and stamp it again.</li>
             <li>
               You only stamp starts. Each line ends where the next timed line
@@ -125,12 +129,13 @@ export default function HowItWorksModal({
               each track's unsaved work.
             </li>
             <li>
-              The ⋮ menu next to the track name has <b>Reset timings</b>,
-              which clears every
-              timing and saves straight away.
+              In the track list, each track's ⋮ menu has <b>Reset timings</b>,
+              which clears every timing and saves straight away.
             </li>
             <li>
-              Your own tracks can also be edited or deleted from that menu.
+              Your own tracks can also be edited or deleted from that menu. The
+              list stays open afterwards, so you can carry on with another
+              track.
             </li>
           </ul>
         </section>
