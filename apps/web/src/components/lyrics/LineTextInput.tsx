@@ -3,6 +3,7 @@ import { Check, X } from "lucide-react";
 import { useEditorStore } from "../../data-alignment/store";
 import type { Line } from "../../types";
 import Button from "../common/Button";
+import Tooltip from "../common/Tooltip";
 import styles from "./LineTextInput.module.css";
 
 type LineTextInputProps = {
@@ -42,23 +43,25 @@ export default function LineTextInput({
           if (e.key === "Escape") onDone();
         }}
       />
-      <Button
-        variant="text"
-        size="small"
-        icon={<Check />}
-        aria-label="Apply"
-        title="Apply"
-        onClick={applyEdit}
-      />
-      <Button
-        variant="text"
-        color="neutral"
-        size="small"
-        icon={<X />}
-        aria-label="Cancel editing"
-        title="Cancel"
-        onClick={onDone}
-      />
+      <Tooltip content="Apply">
+        <Button
+          variant="text"
+          size="small"
+          icon={<Check />}
+          aria-label="Apply"
+          onClick={applyEdit}
+        />
+      </Tooltip>
+      <Tooltip content="Cancel">
+        <Button
+          variant="text"
+          color="neutral"
+          size="small"
+          icon={<X />}
+          aria-label="Cancel editing"
+          onClick={onDone}
+        />
+      </Tooltip>
     </span>
   );
 }

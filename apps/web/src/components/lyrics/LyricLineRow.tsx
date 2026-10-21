@@ -4,8 +4,8 @@ import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../../data-alignment/store";
 import type { Line } from "../../types";
 import { cx, formatMs } from "../../utils";
-import ActionMenu, { type Action } from "../common/ActionMenu";
 import Button from "../common/Button";
+import Tooltip from "../common/Tooltip";
 import UnsavedDot from "../common/UnsavedDot";
 import LineTextInput from "./LineTextInput";
 import styles from "./LyricLineRow.module.css";
@@ -44,36 +44,6 @@ export default function LyricLineRow({
   // Each row keeps its own, so typed text isn't lost when another row is edited.
   const [isEditing, setIsEditing] = useState(false);
   const isTimed = startMs !== undefined;
-
-  const actions: Action[] = [
-    {
-      label: "Edit text",
-      icon: <Pencil />,
-      onClick: () => setIsEditing(true),
-    },
-    ...(isTimed
-      ? [
-          {
-            label: "Clear timing",
-            icon: <Eraser />,
-            // Selected, so the next Space press stamps it again.
-            onClick: () => {
-              clearTimings([line.id]);
-              selectLine(line.id);
-            },
-          },
-        ]
-      : []),
-    ...(isUnsaved
-      ? [
-          {
-            label: "Undo changes",
-            icon: <Undo2 />,
-            onClick: () => resetLines([line.id]),
-          },
-        ]
-      : []),
-  ];
 
   return (
     <li
@@ -114,19 +84,66 @@ export default function LyricLineRow({
         </span>
 
         {isTimed && (
-          <Button
-            variant="text"
-            size="small"
-            icon={<Play />}
-            aria-label={`Play ${line.text}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onPlay();
-            }}
-          />
+          <Tooltip content="Play from this line's start">
+            <Button
+              variant="text"
+              size="small"
+              icon={<Play />}
+              aria-label={`Play ${line.text}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlay();
+              }}
+            />
+          </Tooltip>
         )}
+        {isTimed && (
+          <Tooltip content="Clear timing">
+            <Button
+              variant="text"
+              color="neutral"
+              size="small"
+              icon={<Eraser />}
+              aria-label={`Clear timing of line ${number}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearTimings([line.id]);
+                // Selected, so the next Space press stamps it again.
+                selectLine(line.id);
+              }}
+            />
+          </Tooltip>
+        )}
+        {isUnsaved && (
+          <Tooltip content="Undo changes">
+            <Button
+              variant="text"
+              color="neutral"
+              size="small"
+              icon={<Undo2 />}
+              aria-label={`Undo changes to line ${number}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                resetLines([line.id]);
+              }}
+            />
+          </Tooltip>
+        )}
+        {/* While editing, the input's own ✓ and ✕ take its place. */}
         {!isEditing && (
-          <ActionMenu actions={actions} label={`Actions for line ${number}`} />
+          <Tooltip content="Edit text">
+            <Button
+              variant="text"
+              color="neutral"
+              size="small"
+              icon={<Pencil />}
+              aria-label={`Edit text of line ${number}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+            />
+          </Tooltip>
         )}
       </div>
 

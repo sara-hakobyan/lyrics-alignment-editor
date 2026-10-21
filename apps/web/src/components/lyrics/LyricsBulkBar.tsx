@@ -2,6 +2,7 @@ import { Eraser, Undo2, X } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../../data-alignment/store";
 import Button from "../common/Button";
+import Tooltip from "../common/Tooltip";
 import NudgeButtons from "../NudgeButtons";
 import styles from "./LyricsBulkBar.module.css";
 
@@ -42,33 +43,37 @@ export default function LyricsBulkBar({
           onNudge={(ms) => nudgeLines(ms, checkedLineIds)}
           subject="the selected lines"
         />
-        <Button
-          variant="text"
-          color="neutral"
-          size="small"
-          icon={<Eraser />}
-          aria-label="Clear timing of the selected lines"
-          title="Clear timing"
-          disabled={!canClear}
-          onClick={() => clearTimings(checkedLineIds)}
-        />
-        <Button
-          variant="text"
-          color="neutral"
-          size="small"
-          icon={<Undo2 />}
-          aria-label="Reset the selected lines to the last save"
-          title="Reset changes"
-          disabled={!canReset}
-          onClick={() => resetLines(checkedLineIds)}
-        />
-        <Button
-          variant="text"
-          size="small"
-          icon={<X />}
-          aria-label="Clear selection"
-          onClick={() => setCheckedLineIds([])}
-        />
+        <Tooltip content="Clear timing">
+          <Button
+            variant="text"
+            color="neutral"
+            size="small"
+            icon={<Eraser />}
+            aria-label="Clear timing of the selected lines"
+            disabled={!canClear}
+            onClick={() => clearTimings(checkedLineIds)}
+          />
+        </Tooltip>
+        <Tooltip content="Reset changes">
+          <Button
+            variant="text"
+            color="neutral"
+            size="small"
+            icon={<Undo2 />}
+            aria-label="Reset the selected lines to the last save"
+            disabled={!canReset}
+            onClick={() => resetLines(checkedLineIds)}
+          />
+        </Tooltip>
+        <Tooltip content="Clear selection">
+          <Button
+            variant="text"
+            size="small"
+            icon={<X />}
+            aria-label="Clear selection"
+            onClick={() => setCheckedLineIds([])}
+          />
+        </Tooltip>
       </div>
       <p className={styles.bulkHint}>
         Shift-click a checkbox to select a range. Untimed lines are skipped.
