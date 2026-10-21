@@ -1,0 +1,82 @@
+/* Checkbox and number on the left; text above, time and actions below. */
+.line {
+  display: grid;
+  grid-template-columns: auto 1.75em 1fr;
+  column-gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.line:hover {
+  background: var(--surface-2);
+}
+
+/* Lighter than the stamping selection, which is drawn over it. */
+.checkedLine {
+  background: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+}
+
+.selectedLine,
+.selectedLine:hover {
+  background: var(--accent-soft);
+}
+
+.checkbox {
+  grid-row: span 2;
+  align-self: start;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.selectedLine .text {
+  font-weight: 600;
+}
+
+.number {
+  grid-row: span 2;
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.text {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 26px;
+  padding: var(--space-2);
+}
+
+.time,
+.untimed {
+  margin-right: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.time {
+  color: var(--success);
+}
+
+.untimed {
+  color: var(--text-muted);
+}
+
+/* Under the time, in the text column (the checkbox and number only span two rows). */
+.issue {
+  grid-column: 3;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--danger);
+}

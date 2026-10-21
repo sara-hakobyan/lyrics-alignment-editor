@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Pencil, RotateCcw, Save, Trash2 } from "lucide-react";
 import { useShallow } from "zustand/shallow";
-import { useEditorStore } from "../alignment/store";
-import { hasUnsavedChanges } from "../alignment/timings";
+import { useEditorStore } from "../data-alignment/store";
+import { hasUnsavedChanges } from "../data-alignment/timings";
 import type { EditorTrack } from "../types";
 import { cx } from "../utils";
 import ActionMenu, { type Action } from "./common/ActionMenu";
@@ -69,7 +69,7 @@ export default function TrackList() {
           hasUnsavedChanges(
             track,
             s.startTimesByTrack[track.id],
-            s.savedLinesByTrack[track.id]
+            s.linesByTrack[track.id]
           )
         )
         .map((track) => track.id)
@@ -165,7 +165,7 @@ export default function TrackList() {
           onClose={() => setPendingAction(null)}
           onConfirm={resetTimings}
           title="Reset timings?"
-          message={`All timings of "${pendingAction.track.title}" will be cleared and saved. This can't be undone.`}
+          message={`All timings of "${pendingAction.track.title}" will be cleared and saved, together with any unsaved text edits. This can't be undone.`}
           confirmLabel="Reset timings"
           danger
         />

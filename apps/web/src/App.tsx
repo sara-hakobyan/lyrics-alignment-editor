@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import Topbar from "./components/Topbar";
-import LyricsPanel from "./components/LyricsPanel";
+import LyricsPanel from "./components/lyrics/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
 import LineDetailsPanel from "./components/LineDetailsPanel";
 import Spinner from "./components/common/Spinner";
 import styles from "./App.module.css";
-import { useEditorStore } from "./alignment/store";
+import { useEditorStore } from "./data-alignment/store";
 import { useTimingState } from "./hooks/useTimingState";
 import { useShallow } from "zustand/shallow";
 

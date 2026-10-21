@@ -1,7 +1,7 @@
 import { Play, Undo2 } from "lucide-react";
 import { useShallow } from "zustand/shallow";
-import { useEditorStore } from "../alignment/store";
-import { isLineUnsaved } from "../alignment/timings";
+import { useEditorStore } from "../data-alignment/store";
+import { useSelectedLine } from "../hooks/useSelectedLine";
 import { useTimingState } from "../hooks/useTimingState";
 import { formatMs } from "../utils";
 import Button from "./common/Button";
@@ -15,34 +15,23 @@ type LineDetailsPanelProps = {
 export default function LineDetailsPanel({
   onPlayLine,
 }: LineDetailsPanelProps) {
-  const { selectedLineId, revertLine, nudgeLines } = useEditorStore(
+  const { resetLines, nudgeLines } = useEditorStore(
     useShallow((s) => ({
-      selectedLineId: s.selectedLineId,
-      revertLine: s.revertLine,
+      resetLines: s.resetLines,
       nudgeLines: s.nudgeLines,
     }))
   );
-  const {
-    track,
-    startTimesMs,
-    savedStartTimesMs,
-    endMsByLineId,
-    issueByLineId,
-    canNudge,
-  } = useTimingState();
+  const { startTimesMs, endMsByLineId, issueByLineId, isUnsaved, canNudge } =
+    useTimingState();
+  const { selectedLine, index: lineIndex } = useSelectedLine();
 
-  const lineIndex =
-    track?.lines.findIndex((line) => line.id === selectedLineId) ?? -1;
-  const selectedLine = track?.lines[lineIndex];
   const startMs = selectedLine ? startTimesMs[selectedLine.id] : undefined;
   const endMs = selectedLine ? endMsByLineId.get(selectedLine.id) : undefined;
   const timingIssue = selectedLine
     ? issueByLineId.get(selectedLine.id)
     : undefined;
-  // Whether the start differs from the last save, so there's something to undo.
-  const isUnsaved =
-    !!selectedLine &&
-    isLineUnsaved(startTimesMs, savedStartTimesMs, selectedLine.id);
+  // Whether the start or text differs from the last save, so there's something to undo.
+  const hasChanges = !!selectedLine && isUnsaved(selectedLine);
   const isTimed = startMs !== undefined;
 
   return (
@@ -97,13 +86,13 @@ export default function LineDetailsPanel({
         </div>
       )}
 
-      {selectedLine && isUnsaved && (
+      {selectedLine && hasChanges && (
         <Button
           variant="outlined"
           color="neutral"
           prependIcon={<Undo2 />}
-          title="Go back to the last saved time"
-          onClick={() => revertLine(selectedLine.id)}
+          title="Go back to the last saved time and text"
+          onClick={() => resetLines([selectedLine.id])}
         >
           Undo
         </Button>

@@ -11,8 +11,7 @@ type NowPlayingProps = {
 // Karaoke-style readout: the line being sung in the middle, with the lines
 // before and after it for context.
 export default function NowPlaying({ audioRef }: NowPlayingProps) {
-  const { track, segments } = useTimingState();
-  const lines = track?.lines ?? [];
+  const { lines, segments } = useTimingState();
   const [playingLineId, setPlayingLineId] = useState<string | null>(null);
   const isPlaying = useIsPlaying(audioRef);
 
@@ -32,30 +31,17 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
       update();
       frame = requestAnimationFrame(loop);
     };
-    const start = () => {
-      cancelAnimationFrame(frame);
-      loop();
-    };
-    const stop = () => {
-      cancelAnimationFrame(frame);
-      update();
-    };
 
-    audio.addEventListener("play", start);
-    audio.addEventListener("pause", stop);
-    audio.addEventListener("ended", stop);
+    if (isPlaying) loop();
+    else update();
+    // A seek while paused moves the highlight too.
     audio.addEventListener("seeked", update);
-    if (audio.paused) update();
-    else start();
 
     return () => {
       cancelAnimationFrame(frame);
-      audio.removeEventListener("play", start);
-      audio.removeEventListener("pause", stop);
-      audio.removeEventListener("ended", stop);
       audio.removeEventListener("seeked", update);
     };
-  }, [audioRef, segments]);
+  }, [audioRef, segments, isPlaying]);
 
   const index = lines.findIndex((line) => line.id === playingLineId);
 

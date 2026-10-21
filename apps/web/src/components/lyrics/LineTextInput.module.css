@@ -1,0 +1,19 @@
+/* Takes the text's place in the row while the line is edited. */
+.edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.textInput {
+  flex: 1;
+  min-width: 0;
+  padding: 2px var(--space-2);
+  font: inherit;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}

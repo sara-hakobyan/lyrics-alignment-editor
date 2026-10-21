@@ -299,3 +299,37 @@ The selector joins the unsaved track ids into a string, so `useShallow` only re-
 ## `canShift` takes the lines that are broken now as a parameter
 
 App passes its memoized `issueByLineId` and the store builds the set once per nudge, so the eight nudge buttons no longer rebuild and re-check all the segments on every render.
+
+---
+
+_Task: review fixes on the user-experience branch (line text edits, store actions, splitting the lyrics panel)._
+
+## Line text edits are a per-track draft, like the stamps
+
+Edited lines live in `linesByTrack`, next to `startTimesByTrack`; `track` and `tracks` always hold the last save. "Save changes" sends the draft lines, and the edit form opens with them.
+
+- **Why:** text edits used to overwrite `track` and keep the saved copy aside, the opposite of how stamps work. One pattern for both means "unsaved" is always draft vs `track`, and a future editable field doesn't need its own `saved…ByTrack`.
+- **Trade-off:** "Reset timings" saves at once, so it also saves pending text edits. Its confirm message now says so.
+
+## One store action per job: `clearTimings(ids)` and `resetLines(ids)`
+
+`clearLineTiming` / `clearLinesTiming` and `revertLine` / `resetLines` were merged. Single-line callers pass `[id]`.
+
+- **Why:** each pair did the same thing for one line or many. Merging also made the details panel's Undo revert text edits, not only timing.
+
+## One unsaved check per line: start time or text
+
+`isLineUnsaved(line, …)` in `timings.ts` compares both, by line id. `useTimingState` exposes it as `isUnsaved(line)`, and `hasUnsavedChanges` checks every line with it.
+
+- **Why:** the check lived in three places, and the track-level one compared text by position instead of by id.
+
+## Line actions in the row's ⋮ menu; each row keeps its own edit state
+
+`LyricsPanel` is split into `components/lyrics/` (`LyricsPanel`, `LyricsBulkBar`, `LyricLineRow`, `LineTextInput`). Edit text, Clear timing and Undo changes moved into the existing `ActionMenu`; only Play stays visible, so the panel is back to 380px.
+
+- **Why:** the row had grown to five buttons and the panel to ~300 lines. Keeping `isEditing` in each row means typed text isn't lost when another row is edited.
+- **Trade-off:** clearing a line's timing takes two clicks instead of one. The menu can be clipped at the bottom of the scrolling panel (noted under `ActionMenu`).
+
+## `NowPlaying` starts and stops its loop from `useIsPlaying`
+
+- **Why:** it listened to play/pause/ended itself as well as through the hook. Now only its `seeked` listener is its own.

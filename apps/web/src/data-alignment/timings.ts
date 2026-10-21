@@ -28,34 +28,37 @@ export function getSavedStartTimes(track: EditorTrack): Record<string, number> {
   );
 }
 
-// whether a line's current start differs from its saved one (incl. timed vs untimed).
-export function isLineUnsaved(
-  startTimesMs: Record<string, number>,
-  savedStartTimesMs: Record<string, number>,
-  lineId: string
-): boolean {
-  return startTimesMs[lineId] !== savedStartTimesMs[lineId];
+// The line texts from the track's last save: line id → text.
+export function getSavedTexts(track: EditorTrack): Map<string, string> {
+  return new Map(track.lines.map((line) => [line.id, line.text]));
 }
 
-// Whether a track has changes that aren't saved: line text edited since the
-// last save (`savedLines` is only set then), or stamps that differ from it.
-// A track that was never opened has no stamps of its own yet.
+// Whether a line differs from its last save: start time (incl. timed vs untimed) or text.
+export function isLineUnsaved(
+  line: Line,
+  startTimesMs: Record<string, number>,
+  savedStartTimesMs: Record<string, number>,
+  savedTextById: Map<string, string>
+): boolean {
+  return (
+    startTimesMs[line.id] !== savedStartTimesMs[line.id] ||
+    line.text !== savedTextById.get(line.id)
+  );
+}
+
+// Whether any line of a track differs from its last save. A track that was
+// never opened has no stamps or lines of its own yet, so nothing is unsaved.
 export function hasUnsavedChanges(
   track: EditorTrack,
   startTimesMs: Record<string, number> | undefined,
-  savedLines: Line[] | undefined
+  lines: Line[] | undefined
 ): boolean {
-  const hasEditedText =
-    savedLines !== undefined &&
-    track.lines.some((line, i) => line.text !== savedLines[i]?.text);
-  if (hasEditedText) return true;
-  if (startTimesMs === undefined) return false;
+  if (!startTimesMs || !lines) return false;
 
-  const saved = getSavedStartTimes(track);
-  const lineIds = Object.keys(startTimesMs);
-  return (
-    lineIds.length !== Object.keys(saved).length ||
-    lineIds.some((lineId) => isLineUnsaved(startTimesMs, saved, lineId))
+  const savedStartTimesMs = getSavedStartTimes(track);
+  const savedTextById = getSavedTexts(track);
+  return lines.some((line) =>
+    isLineUnsaved(line, startTimesMs, savedStartTimesMs, savedTextById)
   );
 }
 
