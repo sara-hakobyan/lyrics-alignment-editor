@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { MoreVertical } from "lucide-react";
 import { cx } from "../../utils";
 import Button from "./Button";
+import Tooltip from "./Tooltip";
 import styles from "./ActionMenu.module.css";
 
 export type Action = {
@@ -55,16 +56,18 @@ export default function ActionMenu({
       className={styles.wrapper}
       onClick={(e) => e.stopPropagation()}
     >
-      <Button
-        variant="text"
-        color="neutral"
-        size="small"
-        icon={<MoreVertical />}
-        aria-label={label}
-        aria-expanded={isOpen}
-        aria-controls={menuId}
-        onClick={() => setIsOpen(!isOpen)}
-      />
+      <Tooltip content={label}>
+        <Button
+          variant="text"
+          color="neutral"
+          size="small"
+          icon={<MoreVertical />}
+          aria-label={label}
+          aria-expanded={isOpen}
+          aria-controls={menuId}
+          onClick={() => setIsOpen(!isOpen)}
+        />
+      </Tooltip>
 
       {isOpen && (
         <ul id={menuId} className={styles.menu}>

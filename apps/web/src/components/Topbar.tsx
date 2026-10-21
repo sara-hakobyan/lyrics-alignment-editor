@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Lightbulb, Plus } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../data-alignment/store";
 import AddTrackModal from "./AddTrackModal";
 import Button from "./common/Button";
+import HowItWorksModal from "./HowItWorksModal";
 import styles from "./Topbar.module.css";
 
 export default function Topbar() {
@@ -15,6 +16,7 @@ export default function Topbar() {
   );
 
   const [isAddTrackOpen, setIsAddTrackOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const openAddTrack = () => setIsAddTrackOpen(true);
 
@@ -39,7 +41,19 @@ export default function Topbar() {
         </p>
       )}
 
+      <Button
+        className={styles.guideButton}
+        prependIcon={<Lightbulb />}
+        onClick={() => setIsGuideOpen(true)}
+      >
+        How it works
+      </Button>
+
       <AddTrackModal isOpen={isAddTrackOpen} onClose={closeModal} />
+      <HowItWorksModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
     </header>
   );
 }

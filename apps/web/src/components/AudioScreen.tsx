@@ -8,6 +8,7 @@ import Button from "./common/Button";
 import NowPlaying from "./NowPlaying";
 import TrackList from "./TrackList";
 import styles from "./AudioScreen.module.css";
+import Tooltip from "./common/Tooltip";
 
 type AudioScreenProps = {
   audioRef: RefObject<HTMLAudioElement>;
@@ -45,19 +46,21 @@ export default function AudioScreen({ audioRef, onStamp }: AudioScreenProps) {
         {/* For stamping without a keyboard, e.g. on a touch screen. */}
         {
           <div className={styles.stamp}>
-            <Button
-              className={styles.stampButton}
-              prependIcon={<Timer />}
-              disabled={!selectedLine || !isPlaying}
-              // On press, not release, so the time isn't taken late.
-              onPointerDown={(e) => {
-                e.currentTarget.blur();
-                onStamp();
-              }}
-            >
-              {selectedLine ? `Stamp line ${index + 1}` : "All lines stamped"}
-              <kbd className={styles.key}>Space</kbd>
-            </Button>
+            <Tooltip content="(or press Space)">
+              <Button
+                className={styles.stampButton}
+                prependIcon={<Timer />}
+                disabled={!selectedLine || !isPlaying}
+                // On press, not release, so the time isn't taken late.
+                onPointerDown={(e) => {
+                  e.currentTarget.blur();
+                  onStamp();
+                }}
+              >
+                {selectedLine ? `Stamp line ${index + 1}` : "All lines stamped"}
+                <kbd className={styles.key}>Space</kbd>
+              </Button>
+            </Tooltip>
             {selectedLine && (
               <p className={styles.stampText}>{selectedLine.text}</p>
             )}

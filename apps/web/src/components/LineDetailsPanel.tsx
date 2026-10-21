@@ -5,6 +5,7 @@ import { useSelectedLine } from "../hooks/useSelectedLine";
 import { useTimingState } from "../hooks/useTimingState";
 import { formatMs } from "../utils";
 import Button from "./common/Button";
+import Tooltip from "./common/Tooltip";
 import NudgeButtons from "./NudgeButtons";
 import styles from "./LineDetailsPanel.module.css";
 
@@ -44,17 +45,16 @@ export default function LineDetailsPanel({
           )}
         </h3>
 
-        <Button
-          variant="outlined"
-          size="small"
-          icon={<Play />}
-          aria-label="Play this line"
-          title={
-            isTimed ? "Play from this line's start" : "Stamp this line first"
-          }
-          disabled={!selectedLine || !isTimed}
-          onClick={() => selectedLine && onPlayLine(selectedLine.id)}
-        />
+        <Tooltip content={"Play from this line's start"}>
+          <Button
+            variant="outlined"
+            size="small"
+            icon={<Play />}
+            aria-label="Play this line"
+            disabled={!selectedLine || !isTimed}
+            onClick={() => selectedLine && onPlayLine(selectedLine.id)}
+          />
+        </Tooltip>
       </div>
 
       <p className={styles.text}>{selectedLine?.text ?? "No line selected"}</p>
