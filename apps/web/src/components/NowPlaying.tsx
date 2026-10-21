@@ -1,4 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
+import { useIsPlaying } from "../hooks/useIsPlaying";
 import { useTimingState } from "../hooks/useTimingState";
 import { cx } from "../utils";
 import styles from "./NowPlaying.module.css";
@@ -10,10 +11,9 @@ type NowPlayingProps = {
 // Karaoke-style readout: the line being sung in the middle, with the lines
 // before and after it for context.
 export default function NowPlaying({ audioRef }: NowPlayingProps) {
-  const { track, segments } = useTimingState();
-  const lines = track?.lines ?? [];
+  const { lines, segments } = useTimingState();
   const [playingLineId, setPlayingLineId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isPlaying = useIsPlaying(audioRef);
 
   // Follows the audio every frame while it plays. State only changes when the
   // playing line does, so this re-renders a few times per line, not 60 times a second.
@@ -31,32 +31,17 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
       update();
       frame = requestAnimationFrame(loop);
     };
-    const start = () => {
-      cancelAnimationFrame(frame);
-      setIsPlaying(true);
-      loop();
-    };
-    const stop = () => {
-      cancelAnimationFrame(frame);
-      setIsPlaying(false);
-      update();
-    };
 
-    audio.addEventListener("play", start);
-    audio.addEventListener("pause", stop);
-    audio.addEventListener("ended", stop);
+    if (isPlaying) loop();
+    else update();
+    // A seek while paused moves the highlight too.
     audio.addEventListener("seeked", update);
-    if (audio.paused) update();
-    else start();
 
     return () => {
       cancelAnimationFrame(frame);
-      audio.removeEventListener("play", start);
-      audio.removeEventListener("pause", stop);
-      audio.removeEventListener("ended", stop);
       audio.removeEventListener("seeked", update);
     };
-  }, [audioRef, segments]);
+  }, [audioRef, segments, isPlaying]);
 
   const index = lines.findIndex((line) => line.id === playingLineId);
 

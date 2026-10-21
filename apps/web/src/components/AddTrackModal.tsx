@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { FileAudio } from "lucide-react";
-import { useEditorStore } from "../alignment/store";
+import { getLines, useEditorStore } from "../data-alignment/store";
 import Button from "./common/Button";
 import Modal from "./common/Modal";
 import TextField from "./common/TextField";
@@ -19,11 +19,13 @@ export default function AddTrackModal({
   onClose,
   track,
 }: AddTrackModalProps) {
-  const { addTrack, updateTrack, loadAudioFile } = useEditorStore(
+  const { addTrack, updateTrack, loadAudioFile, lines } = useEditorStore(
     useShallow((s) => ({
       addTrack: s.addTrack,
       updateTrack: s.updateTrack,
       loadAudioFile: s.loadAudioFile,
+      // With text edits, so saving the form doesn't drop them.
+      lines: track ? getLines(s, track) : undefined,
     }))
   );
   // The add and edit modals can be in the page together, so the id must be unique.
@@ -32,7 +34,7 @@ export default function AddTrackModal({
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const audioFileRef = useRef<HTMLInputElement>(null);
   const [lyrics, setLyrics] = useState(
-    track?.lines.map((line) => line.text).join("\n") ?? ""
+    lines?.map((line) => line.text).join("\n") ?? ""
   );
   const [trackTitle, setTrackTitle] = useState(track?.title ?? "");
   const [artist, setArtist] = useState(track?.artist ?? "");

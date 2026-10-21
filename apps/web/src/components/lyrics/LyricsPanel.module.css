@@ -1,0 +1,47 @@
+.panel {
+  padding: var(--space-4);
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+/* Pushes the untimed pill to the right, after the select-all checkbox. */
+.header h3 {
+  flex: 1;
+}
+
+/* Lines up with the row checkboxes below it. */
+.selectAll {
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 var(--space-2);
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.pill {
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--warning);
+  white-space: nowrap;
+}
+
+.lines {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

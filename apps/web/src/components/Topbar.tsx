@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useShallow } from "zustand/shallow";
-import { useEditorStore } from "../alignment/store";
+import { useEditorStore } from "../data-alignment/store";
 import AddTrackModal from "./AddTrackModal";
 import Button from "./common/Button";
 import styles from "./Topbar.module.css";
