@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { EditorTrack, NewTrackInput } from "../types";
+import type { EditorTrack, Line, NewTrackInput } from "../types";
 import { wait } from "../utils";
 import {
   buildSegments,
@@ -21,6 +21,9 @@ type EditorState = {
   tracks: EditorTrack[];
   // Stamps per track id, saved or not, so switching tracks keeps them.
   startTimesByTrack: Record<string, StartTimes>;
+  // A track's lines as last saved, kept while it has line text edits that
+  // aren't saved yet, so the unsaved check has something to compare with.
+  savedLinesByTrack: Record<string, Line[]>;
   selectedLineId: string | null;
   // Lines ticked for bulk actions; separate from the line selected for stamping.
   checkedLineIds: string[];
@@ -38,6 +41,9 @@ type EditorState = {
   selectLine: (lineId: string | null) => void;
   stampLine: (seconds: number) => void;
   clearLineTiming: (lineId: string) => void;
+  editLine: (lineId: string, text: string) => void;
+  clearLinesTiming: (lineIds: string[]) => void;
+  resetLines: (lineIds: string[]) => void;
   revertLine: (lineId: string) => void;
   setCheckedLineIds: (lineIds: string[]) => void;
   nudgeLines: (deltaMs: number, lineIds: string[]) => void;
@@ -47,6 +53,13 @@ type EditorState = {
 
 const replaceTrack = (tracks: EditorTrack[], updated: EditorTrack) =>
   tracks.map((t) => (t.id === updated.id ? updated : t));
+
+// A copy of the record without the given key.
+const without = <T>(record: Record<string, T>, key: string) => {
+  const copy = { ...record };
+  delete copy[key];
+  return copy;
+};
 
 const withStartTimes = (
   state: EditorState,
@@ -82,6 +95,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   track: null,
   tracks: [],
   startTimesByTrack: {},
+  savedLinesByTrack: {},
   selectedLineId: null,
   checkedLineIds: [],
   error: null,
@@ -158,6 +172,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set((state) => ({
         track: state.track?.id === updated.id ? updated : state.track,
         tracks: replaceTrack(state.tracks, updated),
+        // The form stores the lines, edited text included, so none is unsaved now.
+        savedLinesByTrack: without(state.savedLinesByTrack, updated.id),
         error: null,
       }));
       return true;
@@ -216,6 +232,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         checkedLineIds:
           state.track?.id === updated.id ? [] : state.checkedLineIds,
         tracks: replaceTrack(state.tracks, updated),
+        // The edited line text went out with this save.
+        savedLinesByTrack: without(state.savedLinesByTrack, updated.id),
         error: null,
         isSaving: false,
       }));
@@ -273,6 +291,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }));
   },
 
+  // Replaces one line's text in the open track. Nothing is stored here; the new
+  // lines go out with "Save changes". The line keeps its id, so its timing stays.
+  editLine: (lineId, text) => {
+    const track = get().track;
+    const newText = text.trim();
+    if (!track || newText === "") return;
+
+    const updated = {
+      ...track,
+      lines: track.lines.map((line) =>
+        line.id === lineId ? { ...line, text: newText } : line
+      ),
+    };
+    set((state) => ({
+      track: updated,
+      tracks: replaceTrack(state.tracks, updated),
+      savedLinesByTrack: {
+        ...state.savedLinesByTrack,
+        // Only the first edit since the last save keeps the saved lines.
+        [track.id]: state.savedLinesByTrack[track.id] ?? track.lines,
+      },
+    }));
+  },
+
   // Puts a line back to its last saved start time, or untimed if it was never saved.
   revertLine: (lineId) => {
     const track = get().track;
@@ -285,6 +327,50 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         else startTimes[lineId] = savedMs;
       }),
       selectedLineId: lineId,
+    }));
+  },
+
+  // Removes the timing of every given line.
+  clearLinesTiming: (lineIds) => {
+    const track = get().track;
+    if (!track) return;
+
+    set((state) => ({
+      startTimesByTrack: updateStartTimes(state, track.id, (startTimes) => {
+        for (const lineId of lineIds) delete startTimes[lineId];
+      }),
+    }));
+  },
+
+  // Puts the given lines back to their last save: start time (or untimed) and text.
+  resetLines: (lineIds) => {
+    const { track, savedLinesByTrack } = get();
+    if (!track) return;
+
+    const savedStartTimes = getSavedStartTimes(track);
+    const savedTextById = new Map(
+      savedLinesByTrack[track.id]?.map((line) => [line.id, line.text]) ?? []
+    );
+    const ids = new Set(lineIds);
+    const updated = {
+      ...track,
+      lines: track.lines.map((line) =>
+        ids.has(line.id)
+          ? { ...line, text: savedTextById.get(line.id) ?? line.text }
+          : line
+      ),
+    };
+
+    set((state) => ({
+      track: updated,
+      tracks: replaceTrack(state.tracks, updated),
+      startTimesByTrack: updateStartTimes(state, track.id, (startTimes) => {
+        for (const lineId of lineIds) {
+          const savedMs = savedStartTimes[lineId];
+          if (savedMs === undefined) delete startTimes[lineId];
+          else startTimes[lineId] = savedMs;
+        }
+      }),
     }));
   },
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Topbar from "./components/Topbar";
 import LyricsPanel from "./components/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
@@ -35,6 +35,15 @@ export default function App() {
     void audio.play();
   };
 
+  // Stamps the selected line with the playback time, only while the song plays.
+  // Used by the Space shortcut and the stamp button.
+  const stampNow = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || audio.paused) return;
+
+    stampLine(audio.currentTime);
+  }, [stampLine]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code !== "Space" || e.repeat) return;
@@ -49,11 +58,7 @@ export default function App() {
 
       e.preventDefault();
       e.stopPropagation();
-
-      const audio = audioRef.current;
-      if (!audio || audio.paused) return;
-
-      stampLine(audio.currentTime);
+      stampNow();
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
@@ -61,7 +66,7 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [stampLine]);
+  }, [stampNow]);
 
   // Save errors show in the top bar; these screens are only for before the track loads.
   if (!track && error) return <p className={styles.status}>{error}</p>;
@@ -80,7 +85,7 @@ export default function App() {
 
       <div className={styles.editorContent}>
         <LyricsPanel onPlayLine={playLine} />
-        <AudioScreen audioRef={audioRef} />
+        <AudioScreen audioRef={audioRef} onStamp={stampNow} />
         <LineDetailsPanel onPlayLine={playLine} />
       </div>
     </div>

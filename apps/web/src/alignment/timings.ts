@@ -1,4 +1,4 @@
-import type { EditorTrack, Segment } from "../types";
+import type { EditorTrack, Line, Segment } from "../types";
 
 // One pass from the last line up: each timed line ends where the next timed
 // line starts, and the last one ends with the track.
@@ -37,12 +37,18 @@ export function isLineUnsaved(
   return startTimesMs[lineId] !== savedStartTimesMs[lineId];
 }
 
-// Whether a track's current stamps differ from its last save. A track that
-// was never opened has no stamps of its own yet, so nothing is unsaved.
+// Whether a track has changes that aren't saved: line text edited since the
+// last save (`savedLines` is only set then), or stamps that differ from it.
+// A track that was never opened has no stamps of its own yet.
 export function hasUnsavedChanges(
   track: EditorTrack,
-  startTimesMs: Record<string, number> | undefined
+  startTimesMs: Record<string, number> | undefined,
+  savedLines: Line[] | undefined
 ): boolean {
+  const hasEditedText =
+    savedLines !== undefined &&
+    track.lines.some((line, i) => line.text !== savedLines[i]?.text);
+  if (hasEditedText) return true;
   if (startTimesMs === undefined) return false;
 
   const saved = getSavedStartTimes(track);

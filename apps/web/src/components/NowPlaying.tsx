@@ -1,4 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
+import { useIsPlaying } from "../hooks/useIsPlaying";
 import { useTimingState } from "../hooks/useTimingState";
 import { cx } from "../utils";
 import styles from "./NowPlaying.module.css";
@@ -13,7 +14,7 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
   const { track, segments } = useTimingState();
   const lines = track?.lines ?? [];
   const [playingLineId, setPlayingLineId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isPlaying = useIsPlaying(audioRef);
 
   // Follows the audio every frame while it plays. State only changes when the
   // playing line does, so this re-renders a few times per line, not 60 times a second.
@@ -33,12 +34,10 @@ export default function NowPlaying({ audioRef }: NowPlayingProps) {
     };
     const start = () => {
       cancelAnimationFrame(frame);
-      setIsPlaying(true);
       loop();
     };
     const stop = () => {
       cancelAnimationFrame(frame);
-      setIsPlaying(false);
       update();
     };
 

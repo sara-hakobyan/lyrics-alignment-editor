@@ -66,7 +66,11 @@ export default function TrackList() {
       // unsaved doesn't re-render the list.
       unsavedTrackIdsKey: s.tracks
         .filter((track) =>
-          hasUnsavedChanges(track, s.startTimesByTrack[track.id])
+          hasUnsavedChanges(
+            track,
+            s.startTimesByTrack[track.id],
+            s.savedLinesByTrack[track.id]
+          )
         )
         .map((track) => track.id)
         .join(","),

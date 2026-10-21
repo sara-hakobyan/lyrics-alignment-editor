@@ -1,0 +1,25 @@
+/* Wraps the trigger without changing the layout around it. */
+.trigger {
+  display: inline-flex;
+}
+
+/* A disabled button gets no mouse events, so the wrapper takes them instead.
+   That way a disabled button can still explain why it's disabled. */
+.trigger > :disabled {
+  pointer-events: none;
+}
+
+/* Inverted colors, so it stands out in both light and dark mode. */
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: 260px;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--surface);
+  background: var(--text);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}

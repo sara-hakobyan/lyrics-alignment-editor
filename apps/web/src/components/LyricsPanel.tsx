@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Eraser, Play, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { CheckIcon, Eraser, Pencil, Play, Undo2, X } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../alignment/store";
 import { isLineUnsaved } from "../alignment/timings";
@@ -22,6 +22,10 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
     clearLineTiming,
     setCheckedLineIds,
     nudgeLines,
+    editLine,
+    clearLinesTiming,
+    resetLines,
+    savedLines,
   } = useEditorStore(
     useShallow((s) => ({
       selectedLineId: s.selectedLineId,
@@ -30,18 +34,44 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
       clearLineTiming: s.clearLineTiming,
       setCheckedLineIds: s.setCheckedLineIds,
       nudgeLines: s.nudgeLines,
+      editLine: s.editLine,
+      clearLinesTiming: s.clearLinesTiming,
+      resetLines: s.resetLines,
+      // Only set while the open track has text edits that aren't saved.
+      savedLines: s.track ? s.savedLinesByTrack[s.track.id] : undefined,
     }))
   );
   const { track, startTimesMs, savedStartTimesMs, issueByLineId, canNudge } =
     useTimingState();
   const lines = track?.lines ?? [];
+  // Line id → its text as last saved, to mark lines whose text was edited.
+  const savedTextById = new Map(
+    savedLines?.map((line) => [line.id, line.text]) ?? []
+  );
 
   // The last checkbox clicked, where a shift-click range starts.
   const anchorLineIdRef = useRef<string | null>(null);
+  // The line whose text is shown in an input for editing.
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const untimedCount = lines.filter(
     (line) => startTimesMs[line.id] === undefined
   ).length;
+
+  // Unsaved timing or an unsaved text edit.
+  const isUnsaved = (lineId: string, text: string) =>
+    isLineUnsaved(startTimesMs, savedStartTimesMs, lineId) ||
+    (savedLines !== undefined && savedTextById.get(lineId) !== text);
+
+  const isAllChecked =
+    lines.length > 0 && checkedLineIds.length === lines.length;
+  const hasCheckedTimed = checkedLineIds.some(
+    (id) => startTimesMs[id] !== undefined
+  );
+  const hasCheckedUnsaved = lines.some(
+    (line) => checkedLineIds.includes(line.id) && isUnsaved(line.id, line.text)
+  );
 
   const toggleChecked = (lineId: string, extendRange: boolean) => {
     const anchorIndex = lines.findIndex(
@@ -64,9 +94,37 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
     anchorLineIdRef.current = lineId;
   };
 
+  const handleEdit = (lineId: string) => {
+    setEditingLineId(lineId);
+  };
+  // Puts the typed text in the line; "Save changes" stores it. Empty text is ignored.
+  const handleSave = (lineId: string) => {
+    editLine(lineId, editInputRef.current?.value ?? "");
+    setEditingLineId(null);
+  };
+  const handleCancel = () => {
+    setEditingLineId(null);
+  };
+
   return (
     <aside className={styles.panel}>
       <div className={styles.header}>
+        <input
+          type="checkbox"
+          className={styles.selectAll}
+          checked={isAllChecked}
+          // Half-checked when only some lines are checked.
+          ref={(el) => {
+            if (el) {
+              el.indeterminate = checkedLineIds.length > 0 && !isAllChecked;
+            }
+          }}
+          aria-label="Select all lines"
+          title={isAllChecked ? "Deselect all" : "Select all"}
+          onChange={() =>
+            setCheckedLineIds(isAllChecked ? [] : lines.map((line) => line.id))
+          }
+        />
         <h3>Lyrics ({lines.length})</h3>
         {untimedCount > 0 && (
           <span className={styles.pill}>{untimedCount} untimed</span>
@@ -83,6 +141,26 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
               canNudge={(ms) => canNudge(ms, checkedLineIds)}
               onNudge={(ms) => nudgeLines(ms, checkedLineIds)}
               subject="the selected lines"
+            />
+            <Button
+              variant="text"
+              color="neutral"
+              size="small"
+              icon={<Eraser />}
+              aria-label="Clear timing of the selected lines"
+              title="Clear timing"
+              disabled={!hasCheckedTimed}
+              onClick={() => clearLinesTiming(checkedLineIds)}
+            />
+            <Button
+              variant="text"
+              color="neutral"
+              size="small"
+              icon={<Undo2 />}
+              aria-label="Reset the selected lines to the last save"
+              title="Reset changes"
+              disabled={!hasCheckedUnsaved}
+              onClick={() => resetLines(checkedLineIds)}
             />
             <Button
               variant="text"
@@ -128,12 +206,22 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
                 }}
               />
               <span className={styles.number}>{index + 1}</span>
-              <span className={styles.text}>{line.text}</span>
+              {line.id === editingLineId ? (
+                <input
+                  ref={editInputRef}
+                  className={styles.textInput}
+                  defaultValue={line.text}
+                  autoFocus
+                  aria-label={`Edit line ${index + 1}`}
+                  // Clicking into the input shouldn't select the line.
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className={styles.text}>{line.text}</span>
+              )}
 
               <div className={styles.meta}>
-                {isLineUnsaved(startTimesMs, savedStartTimesMs, line.id) && (
-                  <UnsavedDot />
-                )}
+                {isUnsaved(line.id, line.text) && <UnsavedDot />}
                 <span className={isTimed ? styles.time : styles.untimed}>
                   {formatMs(startMs)}
                 </span>
@@ -163,6 +251,33 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
                       }}
                     />
                   </>
+                )}
+                <Button
+                  variant="text"
+                  color="neutral"
+                  size="small"
+                  icon={line.id === editingLineId ? <CheckIcon /> : <Pencil />}
+                  aria-label={`Edit ${line.text}`}
+                  title="Edit text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (line.id === editingLineId) handleSave(line.id);
+                    else handleEdit(line.id);
+                  }}
+                />
+                {line.id === editingLineId && (
+                  <Button
+                    variant="text"
+                    color="neutral"
+                    size="small"
+                    icon={<X />}
+                    aria-label={`Cancel editing of ${line.text}`}
+                    title="Cancel editing"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancel();
+                    }}
+                  />
                 )}
               </div>
 
