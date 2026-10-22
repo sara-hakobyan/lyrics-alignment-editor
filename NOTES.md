@@ -102,13 +102,24 @@ A lot of data and logic is shared across the app: the open track, the stamps, th
 
 Stamps and text edits are kept per track as drafts (`startTimesByTrack`, `linesByTrack`), while `track` always holds the last save. "Unsaved" is always draft vs last save, which drives the dots, the restore buttons and the Save button. Undo/redo availability comes from history, independently of whether the draft is saved.
 
-### Undo and redo
+### Undo and redo: a command history
 
-Every edit (stamp, text edit, clear, restore, nudge, reset) is a command class with `run()` and `undo()`. A command keeps the values it changes, so redo puts back exactly the same values, even a stamp's playback time. A bulk action is one `CompositeCommand`, so a bulk nudge or clear is undone in one step.
+I built undo/redo as a command history (the Command pattern), not as snapshots of the state. Every edit that can be undone is a small class with `run()` and `undo()` in `commands.ts`: stamp, edit text, clear timing, restore last save, nudge and reset timings. A command keeps only the values it changes, before and after, so undo puts back exactly what was there and redo puts back exactly what was done, even a stamp's playback time.
 
-The history lives outside Zustand, in one `CommandManager` per track, and keeps the last 200 actions. The store only holds the next Undo and Redo labels for the buttons. Saving and switching tracks keep the history; undo after a save makes that change unsaved again, and undo never saves. Using the latest saved version in a conflict, editing a track's lyrics through its form, or deleting it clears that track's history, because old commands could point at lines that changed. A reload clears all history.
+Why commands fit this editor:
 
-Ctrl/⌘ Z undoes, Ctrl/⌘ Shift Z and Ctrl Y redo. They're ignored while typing in a field, so Ctrl Z there still undoes the typing.
+- **A bulk edit is one step.** A bulk nudge, clear or restore is one `CompositeCommand` with a command per line. It runs them in order and undoes them in reverse, so moving eight lines is undone with one Ctrl Z, not eight.
+- **The history stays small.** A stamp remembers one number, not a copy of every line and timing, so 200 steps per track cost almost nothing.
+- **Every edit goes through one path.** Each store action builds a command and runs it with `runCommand`, so a new kind of edit gets undo by adding a command class. The history and the buttons don't change.
+- **An edit that changes nothing isn't recorded**, so Undo never does nothing, and Redo stays available.
+
+**Kept out of Zustand.** The classes in `history/` (`Command`, `CommandManager`, `CompositeCommand`) know nothing about the app. Each track has its own `CommandManager` with up to 200 steps, in a `Map` inside the store creator. Zustand only holds the next Undo and Redo labels (`historyByTrack`) for the buttons and their tooltips, so no component reads or re-renders from the command stacks.
+
+**When history is kept and when it's cleared.** Saving and switching tracks keep it. Undo after a save makes that change unsaved again, and undo never saves; Reset timings can be undone, but has to be saved again. A new edit after an undo clears Redo. Using the latest saved version in a conflict, saving a track through its edit form, or deleting it clears that track's history, because old commands could point at lines that changed. A reload clears all history.
+
+Selecting a line by hand isn't an undo step, but stamping and Reset timings undo the selection change they make. A text edit is recorded when it's applied, not per keystroke.
+
+**Shortcuts.** Undo and Redo buttons sit in the top bar. Ctrl/⌘ Z undoes, Ctrl/⌘ Shift Z and Ctrl Y redo. The shortcuts are ignored while typing in a field or inside a dialog, so Ctrl Z there still undoes the typing.
 
 ### Saving
 
@@ -168,3 +179,7 @@ Only the bold part of each item was skipped. The rest says what the app does ins
 - **LRC export.**
 - **Dedicated shortcuts for line navigation and nudging.** Space stamps and P controls playback outside focused controls, and Ctrl/⌘ Z / Shift Z undo and redo. Native controls are keyboard-accessible, but there are no dedicated shortcuts for moving the lyric selection or nudging.
 - **Dark mode.**
+
+## What surprised me
+
+- A `blob:` URL stops working after a reload, so local audio "saved" in localStorage was silently dead. That's what moved local tracks to IndexedDB.

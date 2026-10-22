@@ -47,6 +47,17 @@ export default function AddTrackModal({
 
   const canSubmit = audioFile !== null && lyrics.trim() !== "";
 
+  // Puts the form back to how it opened, then closes it.
+  const close = () => {
+    setTrackTitle(track?.title ?? "");
+    setArtist(track?.artist ?? "");
+    setLyrics(lines?.map((line) => line.text).join("\n") ?? "");
+    if (!track) setAudioFile(null);
+    // A file input can't be cleared through state, only through the element.
+    if (audioFileRef.current) audioFileRef.current.value = "";
+    onClose();
+  };
+
   const submit = async () => {
     if (!canSubmit) return;
 
@@ -56,19 +67,11 @@ export default function AddTrackModal({
       : await addTrack(input);
     // On failure the form stays open with what was typed; the error shows in the top bar.
     if (!isDone) return;
-
-    setTrackTitle("");
-
-    setArtist("");
-    setAudioFile(null);
-    // A file input can't be cleared through state, only through the element.
-    if (audioFileRef.current) audioFileRef.current.value = "";
-    setLyrics("");
-    onClose();
+    close();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} width={520}>
+    <Modal isOpen={isOpen} onClose={close} width={520}>
       <div className={styles.form}>
         <h2 className={styles.formTitle}>
           {track ? "Edit track" : "Add a track"}
@@ -125,7 +128,7 @@ export default function AddTrackModal({
         />
 
         <div className={styles.actions}>
-          <Button variant="text" color="neutral" onClick={onClose}>
+          <Button variant="text" color="neutral" onClick={close}>
             Cancel
           </Button>
           <Button onClick={submit} disabled={!canSubmit}>
