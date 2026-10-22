@@ -3,7 +3,7 @@
   align-content: center;
   justify-items: center;
   gap: var(--space-3);
-  min-height: 260px;
+  min-height: 200px;
   padding: var(--space-8) var(--space-6);
   text-align: center;
   /* A faint tint at the bottom, so the box doesn't read as an empty white card. */
@@ -13,7 +13,8 @@
     color-mix(in srgb, var(--accent-soft) 60%, var(--surface))
   );
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  overflow-wrap: anywhere;
 }
 
 /* "Now playing" pill above the lines. */
@@ -40,7 +41,7 @@
 }
 
 .current {
-  font-size: 1.75rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--accent);

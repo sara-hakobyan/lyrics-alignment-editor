@@ -336,3 +336,29 @@ Edited lines live in `linesByTrack`, next to `startTimesByTrack`; `track` and `t
 ## `NowPlaying` starts and stops its loop from `useIsPlaying`
 
 - **Why:** it listened to play/pause/ended itself as well as through the hook. Now only its `seeked` listener is its own.
+
+---
+
+_Task: UI/UX review and improvements (custom audio controls, new layout and restyle)._
+
+## Space and P only work outside controls
+
+The global key handler now ignores keys while focus is in a button, link, form field or dialog, or while Ctrl, Cmd or Alt is held. Outside controls, Space stamps and P plays or pauses.
+
+- **Why:** the handler runs in the capture phase and calls `preventDefault`, so Space couldn't press a focused button. P keeps play/pause on the keyboard now that the native player is hidden.
+- **Trade-off:** after tabbing to a button, Space presses it instead of stamping. The play, stamp and lyric buttons blur after a mouse click, so Space keeps stamping after using them.
+
+## Playback position stays in `AudioTransport`, not the store
+
+A custom player (play/pause, restart, speed, mute, seek slider) replaces the native `<audio controls>`, which is now hidden. It keeps the position, duration, speed and mute state in its own state, from the audio element's events.
+
+- **Why:** the same reason as `NowPlaying`: the position changes all the time, so only the player re-renders during playback.
+- **Trade-off:** `NowPlaying`, `Waveform` and `AudioTransport` each listen to the audio element on their own. The slider sets its value straight away when dragged, before `seeked` fires, so it doesn't jump back.
+
+## The lyric list scrolls itself, not the page
+
+When the selected line changes, `LyricsPanel` measures the selected row and changes only the list's `scrollTop`, so the row stays in view with an 8px gap.
+
+- **Why:** stamping moves the selection down the list, so the next line would soon be out of view.
+- **Considered:** `row.scrollIntoView()`, which also scrolls the page when the panels are stacked on a phone, away from the stamp button.
+- **Trade-off:** the row is found by its `data-selected` attribute instead of a ref per row, so it depends on `LyricLineRow` keeping that attribute.

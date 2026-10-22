@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lightbulb, Save } from "lucide-react";
+import { AudioLines, CircleCheck, CircleHelp, Save } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../data-alignment/store";
 import { hasUnsavedChanges } from "../data-alignment/timings";
@@ -29,32 +29,49 @@ export default function Topbar() {
 
   return (
     <header className={styles.topbar}>
-      <TrackSwitcher />
-
-      <div className={styles.spacer}>
-        {error && (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        )}
+      <div className={styles.brand}>
+        <span className={styles.brandIcon}>
+          <AudioLines aria-hidden="true" />
+        </span>
+        <span>
+          Lyric<span className={styles.brandAccent}>Align</span>
+          <small>ALIGNMENT STUDIO</small>
+        </span>
       </div>
-
-      <Button
-        prependIcon={<Save />}
-        loading={isSaving}
-        disabled={!canSave}
-        onClick={saveAlignment}
-      >
-        Save changes
-      </Button>
-
-      <Button
-        className={styles.guideButton}
-        prependIcon={<Lightbulb />}
-        onClick={() => setIsGuideOpen(true)}
-      >
-        How it works
-      </Button>
+      <TrackSwitcher />
+      <div className={styles.saveStatus} role="status">
+        {!canSave && !isSaving && !error && <CircleCheck aria-hidden="true" />}
+        {isSaving
+          ? "Saving…"
+          : error
+          ? "Needs attention"
+          : canSave
+          ? "Unsaved changes"
+          : "All changes saved"}
+      </div>
+      <div className={styles.actions}>
+        <Button
+          variant="text"
+          color="neutral"
+          prependIcon={<CircleHelp />}
+          onClick={() => setIsGuideOpen(true)}
+        >
+          How it works
+        </Button>
+        <Button
+          prependIcon={<Save />}
+          loading={isSaving}
+          disabled={!canSave}
+          onClick={saveAlignment}
+        >
+          Save changes
+        </Button>
+      </div>
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
 
       <HowItWorksModal
         isOpen={isGuideOpen}

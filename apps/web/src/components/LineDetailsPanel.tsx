@@ -36,7 +36,11 @@ export default function LineDetailsPanel({
   const isTimed = startMs !== undefined;
 
   return (
-    <aside className={styles.panel}>
+    <aside className={styles.panel} aria-label="Line details">
+      <div className={styles.panelTitle}>
+        <h2>Fine-tune</h2>
+        <span>LINE DETAILS</span>
+      </div>
       <h3>
         Selected line
         {selectedLine && (
@@ -45,6 +49,13 @@ export default function LineDetailsPanel({
       </h3>
 
       <p className={styles.text}>{selectedLine?.text ?? "No line selected"}</p>
+      {!isTimed && (
+        <p className={styles.help}>
+          {selectedLine
+            ? "Stamp this line during playback to set its start time."
+            : "Choose a lyric from the sheet to inspect its timing."}
+        </p>
+      )}
 
       {/* Start and end as two tiles side by side. */}
       <dl className={styles.times}>
@@ -61,6 +72,11 @@ export default function LineDetailsPanel({
           </dd>
         </div>
       </dl>
+      {isTimed && (
+        <p className={styles.help}>
+          The end follows the next timed line, or the end of the track.
+        </p>
+      )}
 
       {timingIssue && <p className={styles.issue}>{timingIssue}</p>}
 

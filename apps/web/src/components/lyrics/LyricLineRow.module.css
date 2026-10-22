@@ -3,7 +3,9 @@
   display: grid;
   grid-template-columns: auto 1.75em 1fr;
   column-gap: var(--space-2);
-  padding: var(--space-2);
+  padding: 12px 10px;
+  flex: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   cursor: pointer;
 }
@@ -20,6 +22,8 @@
 .selectedLine,
 .selectedLine:hover {
   background: var(--accent-soft);
+  border-color: #ded6f5;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .checkbox {
@@ -46,6 +50,12 @@
 
 .text {
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  overflow-wrap: anywhere;
   line-height: 1.4;
 }
 
@@ -54,14 +64,15 @@
   align-items: center;
   gap: var(--space-1);
   min-height: 26px;
-  padding: var(--space-2);
+  padding-top: 5px;
+  flex-wrap: wrap;
 }
 
 .time,
 .untimed {
   margin-right: var(--space-1);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
 }
 

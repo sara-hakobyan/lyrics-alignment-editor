@@ -8,10 +8,7 @@
   font-weight: 500;
   line-height: 1.2;
   cursor: pointer;
-  transition:
-    background-color 0.15s,
-    border-color 0.15s,
-    transform 0.1s;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
 }
 
 /* Pressed: a small push-in on every variant, so a click is visible. */
@@ -90,6 +87,7 @@
 
 /* Sizes */
 .medium {
+  min-height: 38px;
   padding: var(--space-2) var(--space-3);
   font-size: 0.875rem;
 }
@@ -111,6 +109,16 @@
 
 .iconOnly.small {
   padding: var(--space-1);
+  min-width: 28px;
+  min-height: 28px;
+}
+
+@media (pointer: coarse) {
+  .iconOnly.small,
+  .iconOnly.medium {
+    min-width: 36px;
+    min-height: 36px;
+  }
 }
 
 /* Loading: stays readable (not faded like disabled) and shows a busy cursor. */

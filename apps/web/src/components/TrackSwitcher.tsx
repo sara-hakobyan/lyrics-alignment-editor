@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../data-alignment/store";
-import { getSavedStartTimes, hasUnsavedChanges } from "../data-alignment/timings";
+import {
+  getSavedStartTimes,
+  hasUnsavedChanges,
+} from "../data-alignment/timings";
 import type { EditorTrack } from "../types";
 import { cx } from "../utils";
 import ActionMenu, { type Action } from "./common/ActionMenu";
@@ -114,7 +117,10 @@ export default function TrackSwitcher() {
     <div className={styles.switcher}>
       <div ref={wrapperRef} className={styles.wrapper}>
         {/* A heading wrapping a button, so the open track is still the page's title. */}
-        <h2 className={styles.heading}>
+        <h2
+          className={styles.heading}
+          aria-label={track?.title ?? "Choose a track"}
+        >
           <button
             ref={triggerRef}
             type="button"
@@ -203,16 +209,21 @@ type TrackMenuProps = {
 // Its own component, so the counts are only worked out while the menu is open,
 // not on every stamp.
 function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
-  const { tracks, currentTrackId, selectTrack, startTimesByTrack, linesByTrack } =
-    useEditorStore(
-      useShallow((s) => ({
-        tracks: s.tracks,
-        currentTrackId: s.track?.id,
-        selectTrack: s.selectTrack,
-        startTimesByTrack: s.startTimesByTrack,
-        linesByTrack: s.linesByTrack,
-      }))
-    );
+  const {
+    tracks,
+    currentTrackId,
+    selectTrack,
+    startTimesByTrack,
+    linesByTrack,
+  } = useEditorStore(
+    useShallow((s) => ({
+      tracks: s.tracks,
+      currentTrackId: s.track?.id,
+      selectTrack: s.selectTrack,
+      startTimesByTrack: s.startTimesByTrack,
+      linesByTrack: s.linesByTrack,
+    }))
+  );
 
   return (
     <div id={id} className={styles.menu}>
@@ -258,7 +269,9 @@ function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
                   </span>
                   <span className={styles.meta}>
                     {track.artist}
-                    {track.isLocal && <span className={styles.badge}>local</span>}
+                    {track.isLocal && (
+                      <span className={styles.badge}>local</span>
+                    )}
                   </span>
                 </span>
                 {isCurrent ? (
@@ -271,7 +284,9 @@ function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
               </button>
               <ActionMenu
                 label={`Actions for ${track.title}`}
-                actions={trackActions(track, (action) => onAction(track, action))}
+                actions={trackActions(track, (action) =>
+                  onAction(track, action)
+                )}
               />
             </li>
           );

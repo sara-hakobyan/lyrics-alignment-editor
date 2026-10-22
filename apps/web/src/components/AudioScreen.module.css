@@ -1,57 +1,186 @@
 .panel {
+  grid-area: audio;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  gap: var(--space-6);
-  padding: var(--space-4);
+  gap: 24px;
+  padding: 30px;
   min-width: 0;
   overflow-y: auto;
 }
 
+.heading {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  color: var(--accent);
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: clamp(23px, 2vw, 30px);
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+
+.heading p {
+  margin: 0;
+  font-size: 13px;
+}
+
 .section {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
-.audio {
-  width: 100%;
-  max-width: none;
-}
-
-/* Player and waveform read as one unit. */
 .player {
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--surface-2);
+  gap: 18px;
+  padding: 20px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.sectionHeader,
+.previewHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sectionHeader h2,
+.previewHeader h2,
+.stampHeading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.sectionHeader svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.sectionHeader > span,
+.previewHeader > span {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .stamp {
   display: grid;
   justify-items: start;
-  gap: var(--space-1);
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #dcd6f5;
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
 }
 
-/* Big enough to hit on a touch screen; no double-tap zoom on fast taps. */
+.stampHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.step {
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: white;
+}
+
+.state {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--accent);
+  background: white;
+  border: 1px solid #ded8f3;
+  border-radius: 20px;
+  padding: 3px 8px;
+}
+
 .stampButton {
   min-height: 44px;
   touch-action: manipulation;
 }
 
 .key {
-  margin-left: var(--space-2);
-  padding: 0 var(--space-1);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  background: transparent;
-  opacity: 0.7;
+  margin-left: 12px;
+  padding: 2px 6px;
+  font-size: 10px;
+  border: 1px solid rgb(255 255 255 / 40%);
+  background: rgb(255 255 255 / 12%);
+  color: inherit;
 }
 
 .stampText {
   margin: 0;
-  font-size: 0.875rem;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 550;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.previewHeader {
+  margin-top: 6px;
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 20px;
   color: var(--text-muted);
+  font-size: 11px;
+}
+
+.shortcuts span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 1200px) {
+  .panel {
+    overflow: visible;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .panel {
+    padding: 24px 16px;
+    gap: 20px;
+  }
+
+  .player,
+  .stamp {
+    padding: 16px;
+  }
 }

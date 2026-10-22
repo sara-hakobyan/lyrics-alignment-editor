@@ -1,0 +1,17 @@
+.waveform {
+  position: relative;
+  min-height: 100px;
+}
+
+.status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  font-size: 12px;
+  text-align: center;
+}

@@ -47,6 +47,7 @@ export default function LyricLineRow({
 
   return (
     <li
+      data-selected={isSelected}
       onClick={() => selectLine(line.id)}
       className={cx(
         styles.line,
@@ -74,7 +75,19 @@ export default function LyricLineRow({
           onDone={() => setIsEditing(false)}
         />
       ) : (
-        <span className={styles.text}>{line.text}</span>
+        <button
+          type="button"
+          className={styles.text}
+          aria-label={`Select lyric ${number}: ${line.text}`}
+          aria-pressed={isSelected}
+          onClick={(e) => {
+            e.stopPropagation();
+            selectLine(line.id);
+            if (e.detail > 0) e.currentTarget.blur();
+          }}
+        >
+          {line.text}
+        </button>
       )}
 
       <div className={styles.meta}>
