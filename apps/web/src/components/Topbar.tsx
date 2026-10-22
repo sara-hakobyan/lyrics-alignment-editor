@@ -6,12 +6,24 @@ import { hasUnsavedChanges } from "../data-alignment/timings";
 import Button from "./common/Button";
 import HowItWorksModal from "./HowItWorksModal";
 import TrackSwitcher from "./TrackSwitcher";
+import SaveConflictModal from "./SaveConflictModal";
 import styles from "./Topbar.module.css";
 
 export default function Topbar() {
-  const { error, canSave, isSaving, saveAlignment } = useEditorStore(
+  const {
+    error,
+    canSave,
+    isSaving,
+    saveAlignment,
+    hasConflict,
+    isConflictOpen,
+    reviewConflict,
+  } = useEditorStore(
     useShallow((s) => ({
-      error: s.error,
+      error: (s.track && s.saveErrorsByTrack[s.track.id]) || s.error,
+      hasConflict: !!s.track && !!s.conflictsByTrack[s.track.id],
+      isConflictOpen: s.isConflictDialogOpen,
+      reviewConflict: s.reviewSaveConflict,
       // Save follows the open track, so switching tracks updates it.
       canSave:
         !!s.track &&
@@ -40,9 +52,13 @@ export default function Topbar() {
       </div>
       <TrackSwitcher />
       <div className={styles.saveStatus} role="status">
-        {!canSave && !isSaving && !error && <CircleCheck aria-hidden="true" />}
+        {!canSave && !hasConflict && !isSaving && !error && (
+          <CircleCheck aria-hidden="true" />
+        )}
         {isSaving
           ? "Saving…"
+          : hasConflict
+          ? "Save conflict"
           : error
           ? "Needs attention"
           : canSave
@@ -61,17 +77,31 @@ export default function Topbar() {
         <Button
           prependIcon={<Save />}
           loading={isSaving}
-          disabled={!canSave}
+          disabled={!canSave && !hasConflict}
           onClick={saveAlignment}
         >
           Save changes
         </Button>
       </div>
-      {error && (
+      {hasConflict && (
+        <div className={styles.conflict} role="status">
+          <span>A newer version is saved. Your draft is still here.</span>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={reviewConflict}
+            disabled={isSaving}
+          >
+            Review save conflict
+          </Button>
+        </div>
+      )}
+      {error && !isConflictOpen && (
         <p className={styles.error} role="alert">
           {error}
         </p>
       )}
+      <SaveConflictModal />
 
       <HowItWorksModal
         isOpen={isGuideOpen}

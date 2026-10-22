@@ -1,5 +1,10 @@
-import { create } from "zustand";
-import type { EditorTrack, Line, NewTrackInput } from "../types";
+import { create, type StoreApi } from "zustand";
+import type {
+  EditorTrack,
+  Line,
+  NewTrackInput,
+  SavedAlignmentState,
+} from "../types";
 import { wait } from "../utils";
 import {
   buildSegments,
@@ -28,7 +33,14 @@ type EditorState = {
   selectedLineId: string | null;
   // Lines ticked for bulk actions; separate from the line selected for stamping.
   checkedLineIds: string[];
+  // Loading and track errors (add, edit, delete, audio). Save errors are per track.
   error: string | null;
+  // Per track id, so a save that fails after a track switch stays with its track.
+  saveErrorsByTrack: Record<string, string>;
+  // The server's latest saved state from a 409, per track id.
+  conflictsByTrack: Record<string, SavedAlignmentState>;
+  // The dialog is always about the open track.
+  isConflictDialogOpen: boolean;
   isLoading: boolean;
   isSaving: boolean;
   loadTracks: () => Promise<void>;
@@ -48,6 +60,10 @@ type EditorState = {
   nudgeLines: (deltaMs: number, lineIds: string[]) => void;
   resetTimings: () => Promise<void>;
   saveAlignment: () => Promise<void>;
+  reviewSaveConflict: () => void;
+  dismissSaveConflict: () => void;
+  useLatestSavedVersion: (trackId: string) => void;
+  replaceWithMyVersion: (trackId: string) => Promise<void>;
 };
 
 const replaceTrack = (tracks: EditorTrack[], updated: EditorTrack) =>
@@ -95,6 +111,77 @@ const openTrack = (state: EditorState, track: EditorTrack) => ({
   linesByTrack: { ...state.linesByTrack, [track.id]: getLines(state, track) },
 });
 
+// Both ordinary saves and explicit replacements use the same validation and
+// completion path. The snapshot being saved never replaces a newer live draft.
+async function persistAlignment(
+  set: StoreApi<EditorState>["setState"],
+  get: StoreApi<EditorState>["getState"],
+  trackId: string,
+  expectedVersion?: number
+) {
+  const state = get();
+  const savedTrack = state.tracks.find((track) => track.id === trackId);
+  if (!savedTrack || state.isSaving) return;
+  const track = {
+    ...savedTrack,
+    version: expectedVersion ?? savedTrack.version,
+    lines: getLines(state, savedTrack),
+  };
+  const segments = buildSegments(track, state.startTimesByTrack[trackId] ?? {});
+  const issues = findTimingIssues(segments);
+  if (issues.length > 0) {
+    const count =
+      issues.length === 1 ? "1 line has" : `${issues.length} lines have`;
+    set((s) => ({
+      saveErrorsByTrack: {
+        ...s.saveErrorsByTrack,
+        [trackId]: `${count} invalid timing. Fix the lines marked in red, then save.`,
+      },
+    }));
+    return;
+  }
+
+  set((s) => ({
+    isSaving: true,
+    saveErrorsByTrack: without(s.saveErrorsByTrack, trackId),
+  }));
+  const [result] = await Promise.all([
+    service.saveAlignment(track, segments),
+    wait(MIN_LOADING_MS),
+  ]);
+  set((s) => {
+    const current = s.tracks.find((item) => item.id === trackId);
+    if (!current) return { isSaving: false };
+    if (result.success && result.data) {
+      const updated = { ...current, ...result.data };
+      return {
+        track: s.track?.id === trackId ? updated : s.track,
+        tracks: replaceTrack(s.tracks, updated),
+        conflictsByTrack: without(s.conflictsByTrack, trackId),
+        saveErrorsByTrack: without(s.saveErrorsByTrack, trackId),
+        isConflictDialogOpen:
+          s.track?.id === trackId ? false : s.isConflictDialogOpen,
+        isSaving: false,
+      };
+    }
+    if (result.conflict) {
+      return {
+        conflictsByTrack: { ...s.conflictsByTrack, [trackId]: result.conflict },
+        // A delayed response belongs to the original track, even after a switch.
+        isConflictDialogOpen: s.track?.id === trackId || s.isConflictDialogOpen,
+        isSaving: false,
+      };
+    }
+    return {
+      saveErrorsByTrack: {
+        ...s.saveErrorsByTrack,
+        [trackId]: result.error ?? "Couldn't save. Please try again.",
+      },
+      isSaving: false,
+    };
+  });
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   track: null,
   tracks: [],
@@ -103,6 +190,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedLineId: null,
   checkedLineIds: [],
   error: null,
+  saveErrorsByTrack: {},
+  conflictsByTrack: {},
+  isConflictDialogOpen: false,
   isLoading: false,
   isSaving: false,
 
@@ -160,6 +250,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       tracks: state.tracks.filter((t) => t.id !== trackId),
       startTimesByTrack: without(state.startTimesByTrack, trackId),
       linesByTrack: without(state.linesByTrack, trackId),
+      saveErrorsByTrack: without(state.saveErrorsByTrack, trackId),
+      conflictsByTrack: without(state.conflictsByTrack, trackId),
       error: null,
     }));
 
@@ -198,7 +290,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // Clears every timing of the open track and saves the empty alignment straight away.
   resetTimings: async () => {
     const track = get().track;
-    if (!track) return;
+    if (!track || get().isSaving) return;
 
     set((state) => ({
       startTimesByTrack: withStartTimes(state, track.id, {}),
@@ -208,43 +300,59 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   saveAlignment: async () => {
-    const { track: savedTrack, startTimesByTrack } = get();
-    if (!savedTrack) return;
-    // Sent with the text edits; ids and order don't change, so segments are the same.
-    const track = { ...savedTrack, lines: getLines(get(), savedTrack) };
-
-    const segments = buildSegments(track, startTimesByTrack[track.id] ?? {});
-    // Invalid timings are never sent: the API would reject them, and local saves wouldn't.
-    const issues = findTimingIssues(segments);
-    if (issues.length > 0) {
-      const count =
-        issues.length === 1 ? "1 line has" : `${issues.length} lines have`;
-      set({
-        error: `${count} invalid timing. Fix the lines marked in red, then save.`,
-      });
+    const { track, isSaving, conflictsByTrack } = get();
+    if (!track || isSaving) return;
+    if (conflictsByTrack[track.id]) {
+      set({ isConflictDialogOpen: true });
       return;
     }
+    await persistAlignment(set, get, track.id);
+  },
 
-    set({ isSaving: true });
-    const [result] = await Promise.all([
-      service.saveAlignment(track, segments),
-      wait(MIN_LOADING_MS),
-    ]);
-    if (result.success && result.data) {
-      const saved = result.data;
-      // keep title/audio, take the new version, lines and alignment
-      const updated = { ...track, ...saved };
-      set((state) => ({
-        // The user may have switched tracks while the save was running.
-        track: state.track?.id === updated.id ? updated : state.track,
-        checkedLineIds:
-          state.track?.id === updated.id ? [] : state.checkedLineIds,
-        tracks: replaceTrack(state.tracks, updated),
-        error: null,
-        isSaving: false,
-      }));
-    } else {
-      set({ error: result.error, isSaving: false });
+  reviewSaveConflict: () => {
+    const { track, conflictsByTrack } = get();
+    if (track && conflictsByTrack[track.id])
+      set({ isConflictDialogOpen: true });
+  },
+
+  dismissSaveConflict: () => {
+    if (!get().isSaving) set({ isConflictDialogOpen: false });
+  },
+
+  useLatestSavedVersion: (trackId) => {
+    const state = get();
+    const conflict = state.conflictsByTrack[trackId];
+    const track = state.tracks.find((item) => item.id === trackId);
+    if (!conflict || !track || state.isSaving) return;
+    const updated = { ...track, ...conflict };
+    const isOpen = state.track?.id === trackId;
+    const selectionExists = updated.lines.some(
+      (line) => line.id === state.selectedLineId
+    );
+    set({
+      track: isOpen ? updated : state.track,
+      tracks: replaceTrack(state.tracks, updated),
+      linesByTrack: { ...state.linesByTrack, [trackId]: updated.lines },
+      startTimesByTrack: withStartTimes(
+        state,
+        trackId,
+        getSavedStartTimes(updated)
+      ),
+      selectedLineId:
+        isOpen && !selectionExists
+          ? updated.lines[0]?.id ?? null
+          : state.selectedLineId,
+      checkedLineIds: isOpen ? [] : state.checkedLineIds,
+      conflictsByTrack: without(state.conflictsByTrack, trackId),
+      saveErrorsByTrack: without(state.saveErrorsByTrack, trackId),
+      isConflictDialogOpen: isOpen ? false : state.isConflictDialogOpen,
+    });
+  },
+
+  replaceWithMyVersion: async (trackId) => {
+    const conflict = get().conflictsByTrack[trackId];
+    if (conflict) {
+      await persistAlignment(set, get, trackId, conflict.version);
     }
   },
 
@@ -252,7 +360,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const track = get().tracks.find((t) => t.id === trackId);
     // Re-selecting the current track keeps the selected line.
     if (!track || track.id === get().track?.id) return;
-    set((state) => openTrack(state, track));
+    set((state) => ({
+      ...openTrack(state, track),
+      isConflictDialogOpen: false,
+    }));
   },
 
   setDuration: (seconds) => {

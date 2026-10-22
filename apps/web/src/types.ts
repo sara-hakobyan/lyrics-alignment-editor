@@ -43,6 +43,16 @@ export type SaveAlignmentResponse = {
   alignment: Alignment;
 };
 
+// The latest saved state returned with a version conflict (including version 0).
+export type SavedAlignmentState = Pick<
+  Track,
+  "version" | "lines" | "alignment"
+>;
+
+export type SaveAlignmentResult = Result<SaveAlignmentResponse> & {
+  conflict?: SavedAlignmentState;
+};
+
 export type Result<T> = {
   success: boolean;
   data: T | null;

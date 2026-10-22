@@ -5,6 +5,9 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   width?: number | string;
+  labelledBy?: string;
+  describedBy?: string;
+  dismissible?: boolean;
   children: ReactNode;
 };
 
@@ -12,6 +15,9 @@ export default function Modal({
   isOpen,
   onClose,
   width = 480,
+  labelledBy,
+  describedBy,
+  dismissible = true,
   children,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -29,10 +35,16 @@ export default function Modal({
       ref={dialogRef}
       className={styles.modal}
       style={{ width }}
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
       onClose={onClose}
+      onCancel={(e) => {
+        e.preventDefault();
+        if (dismissible) onClose();
+      }}
       // A click on the backdrop lands on the dialog itself, not on the content.
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (dismissible && e.target === e.currentTarget) onClose();
       }}
     >
       <div className={styles.content}>{children}</div>
