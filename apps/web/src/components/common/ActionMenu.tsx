@@ -17,11 +17,13 @@ type ActionMenuProps = {
   actions: Action[];
   // Accessible name of the ⋮ button.
   label?: string;
+  disabled?: boolean;
 };
 
 export default function ActionMenu({
   actions,
   label = "More actions",
+  disabled = false,
 }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -63,13 +65,14 @@ export default function ActionMenu({
           size="small"
           icon={<MoreVertical />}
           aria-label={label}
-          aria-expanded={isOpen}
+          aria-expanded={isOpen && !disabled}
           aria-controls={menuId}
+          disabled={disabled}
           onClick={() => setIsOpen(!isOpen)}
         />
       </Tooltip>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <ul id={menuId} className={styles.menu}>
           {actions.map((action) => (
             <li key={action.label}>

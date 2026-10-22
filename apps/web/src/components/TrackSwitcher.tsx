@@ -215,6 +215,7 @@ function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
     selectTrack,
     startTimesByTrack,
     linesByTrack,
+    isSaving,
   } = useEditorStore(
     useShallow((s) => ({
       tracks: s.tracks,
@@ -222,6 +223,7 @@ function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
       selectTrack: s.selectTrack,
       startTimesByTrack: s.startTimesByTrack,
       linesByTrack: s.linesByTrack,
+      isSaving: s.isSaving,
     }))
   );
 
@@ -284,6 +286,7 @@ function TrackMenu({ id, onPicked, onAddTrack, onAction }: TrackMenuProps) {
               </button>
               <ActionMenu
                 label={`Actions for ${track.title}`}
+                disabled={isSaving}
                 actions={trackActions(track, (action) =>
                   onAction(track, action)
                 )}

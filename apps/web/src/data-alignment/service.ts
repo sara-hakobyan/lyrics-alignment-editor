@@ -4,7 +4,8 @@ import type {
   NewTrackInput,
   Result,
   SaveAlignmentRequest,
-  SaveAlignmentResponse,
+  SaveAlignmentResult,
+  SavedAlignmentState,
   Segment,
   Track,
 } from "../types";
@@ -16,9 +17,6 @@ import * as localRepository from "./localRepository";
 // Uses the server's `hint` when there is one, because it says what to fix.
 function errorMessage(e: unknown): string {
   if (e instanceof ApiError) {
-    if (e.status === 409) {
-      return "Someone saved a newer version. Reload to get the latest.";
-    }
     const body = e.body as { hint?: string } | undefined;
     return body?.hint ?? e.message;
   }
@@ -104,19 +102,50 @@ export function updateLocalTrack(
   });
 }
 
-export function saveAlignment(
+// A malformed conflict response must never become the editor's saved state.
+function readConflict(body: unknown): SavedAlignmentState | undefined {
+  const state = body as Partial<SavedAlignmentState> | null;
+  if (
+    !state ||
+    !Number.isInteger(state.version) ||
+    !Array.isArray(state.lines) ||
+    (state.alignment !== null && !Array.isArray(state.alignment?.segments))
+  )
+    return;
+  return {
+    version: state.version!,
+    lines: state.lines,
+    alignment: state.alignment ?? null,
+  };
+}
+
+export async function saveAlignment(
   track: EditorTrack,
   segments: Segment[]
-): Promise<Result<SaveAlignmentResponse>> {
+): Promise<SaveAlignmentResult> {
   const body: SaveAlignmentRequest = {
     version: track.version,
     lines: track.lines,
     segments,
   };
 
-  return toResult(() =>
-    track.isLocal
+  try {
+    const data = await (track.isLocal
       ? localRepository.saveAlignment(track.id, body)
-      : remoteRepository.saveAlignment(body)
-  );
+      : remoteRepository.saveAlignment(body));
+    return { success: true, data, error: null };
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) {
+      const conflict = readConflict(e.body);
+      return {
+        success: false,
+        data: null,
+        error: conflict
+          ? "This track was updated elsewhere. Your changes haven't been saved."
+          : "The server's latest version couldn't be read. Your changes are still in the editor. Try saving again.",
+        conflict,
+      };
+    }
+    return { success: false, data: null, error: errorMessage(e) };
+  }
 }

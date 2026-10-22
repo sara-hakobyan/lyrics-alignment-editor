@@ -33,7 +33,8 @@ Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics 
 - **Stamping:** Space (or the Stamp button, for touch screens) stamps the selected line with the playback time and selects the next line, so a whole song is one pass of tapping. It only stamps while the track plays, and Space is ignored while typing in a field.
 - **Re-stamping:** click any line to select it, then stamp it again.
 - **End times are calculated:** each line ends where the next timed line starts, and the last one ends with the track.
-- **Waveform:** under the player, the song's waveform fills in as it plays, with a red playhead. Click it to jump to that point.
+- **Waveform:** under the player, the song's waveform fills in as it plays, with a violet playhead. Click it to jump to that point.
+- **Playback:** P plays or pauses when focus is outside a control. The transport includes keyboard seeking, restart, mute, and playback speed. Space on a focused button or checkbox keeps its native behavior.
 
 **Fixing**
 
@@ -50,6 +51,7 @@ Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics 
 - A dot marks unsaved changes on the line and on its track.
 - A karaoke readout shows the line playing now with the lines before and after it.
 - Errors (a failed load, a rejected save) show in the top bar without replacing the editor, so unsaved work stays on screen.
+- A save conflict opens a choice: keep editing, discard the draft and use the latest saved version, or explicitly replace that version with the draft. Dismissing the dialog keeps the conflict available through **Review save conflict**.
 
 **Tracks**
 
@@ -76,7 +78,7 @@ src/
 │   └── timings.ts          segments from start times, validation, nudge limits, unsaved checks
 ├── hooks/                  useTimingState, useSelectedLine, useIsPlaying
 └── components/
-    ├── Topbar, TrackSwitcher, AudioScreen, Waveform, NowPlaying, LineDetailsPanel,
+    ├── Topbar, TrackSwitcher, AudioScreen, AudioTransport, Waveform, NowPlaying, LineDetailsPanel, SaveConflictModal,
     │   NudgeButtons, AddTrackModal, HowItWorksModal
     ├── lyrics/             LyricsPanel, LyricLineRow, LyricsBulkBar, LineTextInput
     └── common/             Button, TextField, Modal, ConfirmModal, ActionMenu, Tooltip, Spinner, UnsavedDot
@@ -101,6 +103,10 @@ Stamps and text edits are kept per track as drafts (`startTimesByTrack`, `linesB
 The seeded track is saved through the API (`PUT /api/v1/track/alignment`), so the server stays the source of truth and the 400/409 cases are handled. Tracks the user adds are saved in the browser with IndexedDB, because the API has only one track and no route to create another. I used IndexedDB instead of localStorage because it can store the audio file itself, so a user's track still plays after a reload. localStorage only holds a few MB of text, and the temporary `blob:` URL stops working on reload. Both paths return the same response shape, so the rest of the app doesn't care where a track is saved.
 
 Invalid timings are never sent: the app checks them before saving, because the API would accept some of them and the local save would accept all of them.
+
+For a 409, the service returns the latest version, lines and alignment from the response. Conflicts and save errors belong to their original track. **Use latest saved version** adopts that state without another request and explicitly discards the draft. **Replace with my version** sends the current draft with the returned version; it never retries automatically. Another 409 updates the dialog, and a failed retry keeps the draft and the choices. A successful save updates the saved baseline without dropping edits made while the request was pending.
+
+Drafts and conflicts are kept in memory. Reloading still loses unsaved work; automatic draft recovery and automatic merging are not implemented.
 
 ### One units boundary
 
@@ -129,10 +135,14 @@ I added a waveform (wavesurfer.js) to make the editor more appealing and the pla
 
 ## Tests
 
-`pnpm test` runs three Playwright specs (`pnpm test:ui` to watch them run):
+`pnpm test` runs four Playwright specs (`pnpm test:ui` to watch them run):
 
 - `e2e/save-conflict.spec.ts`: **a rejected save.** The test breaks the save payload on its way out (`version: "abc"`) and lets it reach the real server, which answers 400. It checks that the server's hint shows in the top bar, the edited line is still there, and Save is still enabled. The server rejects it before storing anything, so the database isn't touched.
 - `e2e/own-track.spec.ts`: **bring your own track.** It adds a track with an audio file and 3 pasted lines, checks it shows 3 untimed lines, reloads, and checks the track and its lines are still there.
+- `e2e/load-error.spec.ts`: **a failed load.** The API answers 503 until the retry. It checks that the error screen shows the server's hint, then that **Try again** opens the editor.
+- `e2e/track.spec.ts`: **the seeded track loads.** It checks the track's title shows.
+
+The 409 flow has no automated test. I tested it by hand with two tabs: I saved in one tab, then saved in the other without reloading, and the conflict dialog opened.
 
 ## What I deliberately skipped
 
@@ -141,7 +151,7 @@ Only the bold part of each item was skipped. The rest says what the app does ins
 - **Line blocks on the waveform that can be dragged to move or trim them, and zoom.** The waveform is for following playback and seeking. Lines are placed by stamping and fixed by nudging, one line or many at once. End times are calculated from the next line's start, so there are no edges to trim by hand.
 - **Split and merge, adding a single line, reordering lines.** Instead, a line's text can be edited on its row, and a track's whole lyric sheet can be edited (for your own tracks).
 - **Undo/redo history.** Instead, Undo puts a line, or all ticked lines, back to the last save.
-- **Reconciling a 409.** Instead, a conflict shows an error asking to reload. The server's state sent with the 409 isn't merged into the editor.
+- **Automatic merging of conflicting versions.** Instead, a 409 provides an explicit choice to keep editing, adopt the latest saved version, or replace it with the draft.
 - **LRC export.**
-- **Keyboard shortcuts beyond Space.** Space stamps and every control can be reached with Tab, but there are no keys for moving the selection, nudging or playing a line.
+- **Dedicated shortcuts for line navigation and nudging.** Space stamps and P controls playback outside focused controls. Native controls are keyboard-accessible, but there are no dedicated shortcuts for moving the lyric selection or nudging.
 - **Dark mode.**

@@ -362,3 +362,33 @@ When the selected line changes, `LyricsPanel` measures the selected row and chan
 - **Why:** stamping moves the selection down the list, so the next line would soon be out of view.
 - **Considered:** `row.scrollIntoView()`, which also scrolls the page when the panels are stacked on a phone, away from the stamp button.
 - **Trade-off:** the row is found by its `data-selected` attribute instead of a ref per row, so it depends on `LyricLineRow` keeping that attribute.
+
+---
+
+_Task: recovering from a 409 save conflict._
+
+## A 409 opens a choice instead of asking for a reload
+
+The service returns the server's version, lines and alignment from the 409. A dialog offers Keep editing, Use latest saved version (drops the draft) and Replace with my version (saves the draft over the server's version).
+
+- **Why:** the 409 already carries the latest state, and a reload loses the draft. Retrying with the new version on its own could overwrite someone else's work without asking.
+- **Trade-off:** there's no automatic merge, and the draft and the conflict are only in memory, so a reload still loses them.
+
+## The 409 body is only checked for its shape
+
+`readConflict` checks that the version is an integer and that the lines and segments are arrays, then returns only `version`, `lines` and `alignment`.
+
+- **Why:** the 200 response from the same endpoint isn't checked either, and the server builds both from the same state. Returning only those three fields keeps the 409's `error` and `*_version` fields off the track.
+
+## One save at a time, and a late answer stays with its track
+
+Only one save runs at a time. When it finishes, only that track's last save is updated, so stamps and text edits made in the meantime stay as drafts. Conflicts and save errors are kept per track id (`conflictsByTrack`, `saveErrorsByTrack`).
+
+- **Why:** the user can keep editing or switch tracks while a save runs. A late answer mustn't overwrite newer edits or open the dialog over another track.
+- **Trade-off:** Reset timings and the track ⋮ actions are disabled while saving, so they can't race the request.
+
+## The conflict dialog flag is a boolean
+
+`conflictDialogTrackId` became `isConflictDialogOpen`, and the dialog reads the open track's conflict.
+
+- **Why:** the id was always `null` or the open track's id, so it added nothing and needed the same ternary in three places.
