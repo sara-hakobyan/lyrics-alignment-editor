@@ -392,3 +392,43 @@ Only one save runs at a time. When it finishes, only that track's last save is u
 `conflictDialogTrackId` became `isConflictDialogOpen`, and the dialog reads the open track's conflict.
 
 - **Why:** the id was always `null` or the open track's id, so it added nothing and needed the same ternary in three places.
+
+**Changed by developer:** back to `conflictDialogTrackId`. The dialog and the top bar only treat it as open when the id matches the open track, which the developer finds safer if there are several conflicts.
+
+---
+
+_Task: undo/redo. The developer asked for a class-based command history with Undo/Redo and keyboard shortcuts, kept out of Zustand, limited to 150–200 steps, that also works for bulk changes._
+
+## Commands keep their before and after values; bulk edits are one composite
+
+Each command takes the draft and returns a new one, and keeps only the values it changes. Bulk actions (nudge, clear, restore, reset) are one `CompositeCommand`, which runs its children in order and undoes them in reverse.
+
+- **Why:** redo puts back exactly the same values, including a stamp's playback time. A bulk nudge is one undo step and one store update, so in-between states with invalid timings are never shown.
+- **Trade-off:** stamping and Reset timings also undo the selection change they make, but selecting a line by hand isn't recorded. A text edit is recorded when it's applied, not per keystroke. An action that changes nothing isn't recorded and keeps Redo available.
+
+## One history per track, up to 200 steps
+
+Each track gets its own `CommandManager`, kept in a `Map` inside the store creator. Zustand only holds `historyByTrack`, the next Undo and Redo labels that the buttons and tooltips show.
+
+- **Why:** undo shouldn't change a track you aren't looking at, and switching back should keep that track's history.
+- **Trade-off:** histories are only in memory, so a reload clears them.
+
+## Saving keeps history; a new lyric sheet clears it
+
+Saving and switching tracks keep the history, and undo after a save makes that change unsaved again. Using the latest saved version in a conflict, editing the track through its form, or deleting it clears that track's history. Reset timings is undoable but still saves straight away; undo and redo never save.
+
+- **Why:** the history is about local edits, not the server's version. A new lyric sheet can remove or reuse line ids, so old commands could change the wrong lines.
+
+## Shortcuts skip text fields and dialogs
+
+Ctrl/⌘ Z undoes, Ctrl/⌘ Shift Z and Ctrl Y redo. The handler ignores keys while focus is in an input, textarea, select or dialog.
+
+- **Why:** while typing, Ctrl Z should undo the text in the input, not the last stamp.
+- **Trade-off:** checkboxes are inputs too, so after ticking a line Ctrl Z does nothing until focus moves. The Undo button still works.
+
+## The store is built by `createEditorStore(service)`
+
+`createEditorStore.ts` holds the store and takes the persistence service as an argument; `store.ts` passes the real one.
+
+- **Why:** tests can create separate stores with a fake service, without IndexedDB.
+- **Trade-off:** no store or command tests exist yet; only the Playwright specs in `e2e/` do.

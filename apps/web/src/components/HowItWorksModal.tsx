@@ -66,10 +66,14 @@ export default function HowItWorksModal({
               The next line is selected for you, so you can keep tapping through
               the song.
             </li>
-            <li>Stamping only works while the track plays.</li>
             <li>
-              The waveform under the player fills in as the song plays. Click
-              it to jump to that point.
+              Stamping only works while the track plays. Press <kbd>P</kbd> to
+              play or pause when you're not focused on a control. Use the speed
+              menu to slow down a difficult section.
+            </li>
+            <li>
+              The waveform under the player fills in as the song plays. Click it
+              to jump to that point.
             </li>
             <li>Missed one? Click the line to select it and stamp it again.</li>
             <li>
@@ -96,8 +100,14 @@ export default function HowItWorksModal({
             </li>
             <li>
               On each line: clear its timing, edit its text (<kbd>Enter</kbd> to
-              apply, <kbd>Esc</kbd> to cancel), or undo its changes back to the
-              last save.
+              apply, <kbd>Esc</kbd> to cancel), or <b>Restore last save</b> to
+              restore its saved text and timing.
+            </li>
+            <li>
+              Use <b>Undo</b> and <b>Redo</b> in the top bar, or{" "}
+              <kbd>Ctrl/⌘ Z</kbd> and <kbd>Ctrl/⌘ Shift Z</kbd> (
+              <kbd>Ctrl Y</kbd> also redoes). Bulk actions undo together. While
+              typing, these shortcuts undo text in the input.
             </li>
           </ul>
         </section>
@@ -127,6 +137,19 @@ export default function HowItWorksModal({
             <li>
               <b>Save changes</b> saves the open track. Switching tracks keeps
               each track's unsaved work.
+            </li>
+            <li>
+              If the track was saved elsewhere, your draft stays in the editor.
+              Choose <b>Keep editing</b>, <b>Use latest saved version</b> to
+              discard your unsaved changes, or <b>Replace with my version</b> to
+              overwrite the latest saved lyrics and timings. You can reopen the
+              choice with <b>Review save conflict</b>.
+            </li>
+            <li>
+              Drafts and undo history survive track switches and saves, but not
+              a page reload. Undo after saving creates unsaved changes. Adopting
+              a server version or replacing a whole lyric sheet clears that
+              track's history.
             </li>
             <li>
               In the track list, each track's ⋮ menu has <b>Reset timings</b>,

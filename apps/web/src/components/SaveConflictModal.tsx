@@ -12,7 +12,7 @@ export default function SaveConflictModal() {
       useShallow((s) => ({
         track: s.track,
         conflict:
-          s.track && s.isConflictDialogOpen
+          s.track && s.conflictDialogTrackId === s.track.id
             ? s.conflictsByTrack[s.track.id]
             : undefined,
         error: s.track ? s.saveErrorsByTrack[s.track.id] : undefined,

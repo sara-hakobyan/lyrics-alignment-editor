@@ -1,4 +1,4 @@
-import { Play, Undo2 } from "lucide-react";
+import { Play, RotateCcw } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../data-alignment/store";
 import { useSelectedLine } from "../hooks/useSelectedLine";
@@ -31,7 +31,7 @@ export default function LineDetailsPanel({
   const timingIssue = selectedLine
     ? issueByLineId.get(selectedLine.id)
     : undefined;
-  // Whether the start or text differs from the last save, so there's something to undo.
+  // Whether the start or text differs from the last save.
   const hasChanges = !!selectedLine && isUnsaved(selectedLine);
   const isTimed = startMs !== undefined;
 
@@ -111,11 +111,11 @@ export default function LineDetailsPanel({
             variant="outlined"
             color="neutral"
             className={styles.action}
-            prependIcon={<Undo2 />}
+            prependIcon={<RotateCcw />}
             title="Go back to the last saved time and text"
             onClick={() => resetLines([selectedLine.id])}
           >
-            Undo changes
+            Restore last save
           </Button>
         )}
       </div>

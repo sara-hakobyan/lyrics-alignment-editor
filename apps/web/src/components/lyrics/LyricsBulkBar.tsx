@@ -1,4 +1,4 @@
-import { Eraser, Undo2, X } from "lucide-react";
+import { Eraser, RotateCcw, X } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../../data-alignment/store";
 import Button from "../common/Button";
@@ -54,13 +54,13 @@ export default function LyricsBulkBar({
             onClick={() => clearTimings(checkedLineIds)}
           />
         </Tooltip>
-        <Tooltip content="Reset changes">
+        <Tooltip content="Restore last save">
           <Button
             variant="text"
             color="neutral"
             size="small"
-            icon={<Undo2 />}
-            aria-label="Reset the selected lines to the last save"
+            icon={<RotateCcw />}
+            aria-label="Restore the selected lines to the last save"
             disabled={!canReset}
             onClick={() => resetLines(checkedLineIds)}
           />

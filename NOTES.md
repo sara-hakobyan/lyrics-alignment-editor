@@ -40,8 +40,9 @@ Tested with a second song: "Wicked Game" by Chris Isaak (4:48), with its lyrics 
 
 - **Nudge one line** by ±0.1 s / ±0.5 s in the Selected line panel.
 - **Bulk nudge:** tick lines (Shift-click for a range, or select all) and shift them together. Their spacing is kept and untimed lines are skipped.
-- **Per line:** play from its start (to hear what was placed), clear its timing, edit its text, or undo its changes back to the last save. These are icon buttons on each row, each with a tooltip.
-- **Bulk clear / reset** for the ticked lines.
+- **Per line:** play from its start (to hear what was placed), clear its timing, edit its text, or restore its last saved time and text. These are icon buttons on each row, each with a tooltip.
+- **Bulk clear / restore** for the ticked lines.
+- **Undo / redo:** buttons in the top bar, or Ctrl/⌘ Z and Ctrl/⌘ Shift Z (Ctrl Y also redoes). A bulk action undoes in one step, and each track keeps its own history.
 
 **Feedback and rules**
 
@@ -70,16 +71,19 @@ src/
 ├── types.ts                shared data types
 ├── utils.ts                time formatting, lyric parsing
 ├── data-alignment/
-│   ├── store.ts            Zustand store: tracks, stamps, text edits, selection, loading, saving
+│   ├── store.ts            creates the app's store with the real service
+│   ├── createEditorStore.ts    Zustand store: tracks, stamps, text edits, selection, history, loading, saving
+│   ├── commands.ts         undo/redo commands: stamp, edit text, clear, restore, nudge, reset
 │   ├── service.ts          turns every call into { success, data, error }; picks server or browser
 │   ├── remoteRepository.ts API calls
 │   ├── localRepository.ts  IndexedDB calls
 │   ├── db.ts               IndexedDB schema (Dexie)
 │   └── timings.ts          segments from start times, validation, nudge limits, unsaved checks
-├── hooks/                  useTimingState, useSelectedLine, useIsPlaying
+├── history/                Command, CommandManager, CompositeCommand (no app code)
+├── hooks/                  useTimingState, useSelectedLine, useIsPlaying, useHistoryShortcuts
 └── components/
-    ├── Topbar, TrackSwitcher, AudioScreen, AudioTransport, Waveform, NowPlaying, LineDetailsPanel, SaveConflictModal,
-    │   NudgeButtons, AddTrackModal, HowItWorksModal
+    ├── Topbar, TrackSwitcher, HistoryControls, AudioScreen, AudioTransport, Waveform, NowPlaying, LineDetailsPanel,
+    │   SaveConflictModal, NudgeButtons, AddTrackModal, HowItWorksModal
     ├── lyrics/             LyricsPanel, LyricLineRow, LyricsBulkBar, LineTextInput
     └── common/             Button, TextField, Modal, ConfirmModal, ActionMenu, Tooltip, Spinner, UnsavedDot
 ```
@@ -96,7 +100,15 @@ A lot of data and logic is shared across the app: the open track, the stamps, th
 
 ### Drafts next to the last save
 
-Stamps and text edits are kept per track as drafts (`startTimesByTrack`, `linesByTrack`), while `track` always holds the last save. "Unsaved" is always draft vs last save, which drives the dots, the Undo buttons and the Save button.
+Stamps and text edits are kept per track as drafts (`startTimesByTrack`, `linesByTrack`), while `track` always holds the last save. "Unsaved" is always draft vs last save, which drives the dots, the restore buttons and the Save button. Undo/redo availability comes from history, independently of whether the draft is saved.
+
+### Undo and redo
+
+Every edit (stamp, text edit, clear, restore, nudge, reset) is a command class with `run()` and `undo()`. A command keeps the values it changes, so redo puts back exactly the same values, even a stamp's playback time. A bulk action is one `CompositeCommand`, so a bulk nudge or clear is undone in one step.
+
+The history lives outside Zustand, in one `CommandManager` per track, and keeps the last 200 actions. The store only holds the next Undo and Redo labels for the buttons. Saving and switching tracks keep the history; undo after a save makes that change unsaved again, and undo never saves. Using the latest saved version in a conflict, editing a track's lyrics through its form, or deleting it clears that track's history, because old commands could point at lines that changed. A reload clears all history.
+
+Ctrl/⌘ Z undoes, Ctrl/⌘ Shift Z and Ctrl Y redo. They're ignored while typing in a field, so Ctrl Z there still undoes the typing.
 
 ### Saving
 
@@ -106,7 +118,7 @@ Invalid timings are never sent: the app checks them before saving, because the A
 
 For a 409, the service returns the latest version, lines and alignment from the response. Conflicts and save errors belong to their original track. **Use latest saved version** adopts that state without another request and explicitly discards the draft. **Replace with my version** sends the current draft with the returned version; it never retries automatically. Another 409 updates the dialog, and a failed retry keeps the draft and the choices. A successful save updates the saved baseline without dropping edits made while the request was pending.
 
-Drafts and conflicts are kept in memory. Reloading still loses unsaved work; automatic draft recovery and automatic merging are not implemented.
+Drafts, conflicts and undo history are kept in memory. Reloading still loses unsaved work; automatic draft recovery and automatic merging are not implemented.
 
 ### One units boundary
 
@@ -144,14 +156,15 @@ I added a waveform (wavesurfer.js) to make the editor more appealing and the pla
 
 The 409 flow has no automated test. I tested it by hand with two tabs: I saved in one tab, then saved in the other without reloading, and the conflict dialog opened.
 
+Undo/redo has no automated test.
+
 ## What I deliberately skipped
 
 Only the bold part of each item was skipped. The rest says what the app does instead.
 
 - **Line blocks on the waveform that can be dragged to move or trim them, and zoom.** The waveform is for following playback and seeking. Lines are placed by stamping and fixed by nudging, one line or many at once. End times are calculated from the next line's start, so there are no edges to trim by hand.
 - **Split and merge, adding a single line, reordering lines.** Instead, a line's text can be edited on its row, and a track's whole lyric sheet can be edited (for your own tracks).
-- **Undo/redo history.** Instead, Undo puts a line, or all ticked lines, back to the last save.
 - **Automatic merging of conflicting versions.** Instead, a 409 provides an explicit choice to keep editing, adopt the latest saved version, or replace it with the draft.
 - **LRC export.**
-- **Dedicated shortcuts for line navigation and nudging.** Space stamps and P controls playback outside focused controls. Native controls are keyboard-accessible, but there are no dedicated shortcuts for moving the lyric selection or nudging.
+- **Dedicated shortcuts for line navigation and nudging.** Space stamps and P controls playback outside focused controls, and Ctrl/⌘ Z / Shift Z undo and redo. Native controls are keyboard-accessible, but there are no dedicated shortcuts for moving the lyric selection or nudging.
 - **Dark mode.**
