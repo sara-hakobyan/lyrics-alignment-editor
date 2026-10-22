@@ -1,34 +1,112 @@
 .topbar {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 16px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 
-/* Pushes Save and How it works to the right; holds the error message. */
-.spacer {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.6px;
+}
+
+.brandIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: white;
+  background: var(--accent);
+  border-radius: 11px;
+}
+
+.brandIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.brandAccent {
+  color: var(--accent);
+}
+
+.brand small {
+  display: block;
+  margin-top: 2px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  color: var(--text-muted);
+}
+
+.saveStatus {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
   flex: 1;
-  min-width: 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-/* Gradient so it's noticed first. The class is doubled to win over the
-   Button's own background, which uses the same specificity. */
-.guideButton.guideButton {
-  border: none;
-  background: linear-gradient(135deg, var(--accent), #c026d3 60%, #f97316);
-  color: #ffffff;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+.saveStatus svg {
+  width: 15px;
+  height: 15px;
+  color: var(--success);
 }
 
-.guideButton.guideButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--accent), #c026d3 60%, #f97316);
-  filter: brightness(1.08);
+.actions {
+  display: flex;
+  gap: 8px;
 }
 
 .error {
+  flex-basis: 100%;
   margin: 0;
-  font-size: 0.8125rem;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
   color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, white);
+}
+
+@media (max-width: 1000px) {
+  .brand {
+    display: none;
+  }
+
+  .topbar {
+    gap: 12px;
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .topbar > :nth-child(2) {
+    flex-basis: 100%;
+  }
+
+  .saveStatus {
+    justify-content: flex-start;
+    font-size: 11px;
+  }
+
+  .actions {
+    gap: 4px;
+  }
+
+  .actions button {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
 }

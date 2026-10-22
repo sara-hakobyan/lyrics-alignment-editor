@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { CheckCheck, ListMusic } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../../data-alignment/store";
 import { useTimingState } from "../../hooks/useTimingState";
@@ -25,6 +26,20 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
 
   // The last checkbox clicked, where a shift-click range starts.
   const anchorLineIdRef = useRef<string | null>(null);
+  const listRef = useRef<HTMLOListElement>(null);
+
+  // Move only the list's scroll position, so advancing a stamp never scrolls the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>("[data-selected='true']");
+    if (!list || !row) return;
+    const bounds = list.getBoundingClientRect();
+    const rowBounds = row.getBoundingClientRect();
+    if (rowBounds.bottom > bounds.bottom)
+      list.scrollTop += rowBounds.bottom - bounds.bottom + 8;
+    else if (rowBounds.top < bounds.top)
+      list.scrollTop -= bounds.top - rowBounds.top + 8;
+  }, [selectedLineId]);
 
   const untimedCount = lines.filter(
     (line) => startTimesMs[line.id] === undefined
@@ -61,7 +76,35 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
   };
 
   return (
-    <aside className={styles.panel}>
+    <aside className={styles.panel} aria-label="Lyrics">
+      <div className={styles.title}>
+        <ListMusic aria-hidden="true" />
+        <h2>Lyric sheet</h2>
+        <span>{lines.length} lines</span>
+      </div>
+      <div className={styles.progressSection}>
+        <div className={styles.progressLabel}>
+          <span>
+            {untimedCount === 0 ? (
+              <>
+                <CheckCheck aria-hidden="true" /> All lines timed
+              </>
+            ) : (
+              "Alignment progress"
+            )}
+          </span>
+          <strong>
+            {lines.length - untimedCount} / {lines.length}
+          </strong>
+        </div>
+        <progress
+          className={styles.progress}
+          max={lines.length || 1}
+          value={lines.length - untimedCount}
+          aria-label="Timed lyrics"
+        />
+        <p>Select a line to edit. Check several to adjust together.</p>
+      </div>
       <div className={styles.header}>
         <input
           type="checkbox"
@@ -94,7 +137,7 @@ export default function LyricsPanel({ onPlayLine }: LyricsPanelProps) {
         />
       )}
 
-      <ol className={styles.lines}>
+      <ol className={styles.lines} ref={listRef}>
         {lines.map((line, index) => (
           <LyricLineRow
             key={line.id}

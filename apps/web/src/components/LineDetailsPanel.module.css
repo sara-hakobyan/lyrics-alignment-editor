@@ -1,11 +1,38 @@
 .panel {
+  grid-area: details;
   display: grid;
   align-content: start;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: 26px 20px;
+  overflow-y: auto;
   min-width: 0;
   background: var(--surface);
   border-left: 1px solid var(--border);
+}
+
+.panelTitle {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelTitle h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.panelTitle > span {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+}
+
+.help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .panel h3 {
@@ -16,6 +43,7 @@
 }
 
 /* The line number as a purple pill next to the heading. */
+
 .number {
   padding: 2px var(--space-2);
   font-family: var(--font-mono);
@@ -28,7 +56,8 @@
 
 .text {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
@@ -90,10 +119,11 @@
 }
 
 /* Four equal steps in one row. */
+
 .nudges {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .nudges button {
@@ -101,6 +131,7 @@
 }
 
 /* Hover lifts the step and tints it, so it's clear it can be pressed. */
+
 .nudges button:hover:not(:disabled) {
   color: var(--accent);
   background: var(--accent-soft);
@@ -109,6 +140,7 @@
 }
 
 /* Play and Undo, stacked at full width under the steps. */
+
 .actions {
   display: grid;
   gap: var(--space-2);
@@ -119,4 +151,19 @@
 .action {
   width: 100%;
   min-height: 40px;
+}
+
+@media (max-width: 1200px) {
+  .panel {
+    margin: 0 24px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+  }
+}
+
+@media (max-width: 760px) {
+  .panel {
+    margin: 16px;
+  }
 }

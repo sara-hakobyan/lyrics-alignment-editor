@@ -4,6 +4,7 @@ import LyricsPanel from "./components/lyrics/LyricsPanel";
 import AudioScreen from "./components/AudioScreen";
 import LineDetailsPanel from "./components/LineDetailsPanel";
 import Spinner from "./components/common/Spinner";
+import Button from "./components/common/Button";
 import styles from "./App.module.css";
 import { useEditorStore } from "./data-alignment/store";
 import { useTimingState } from "./hooks/useTimingState";
@@ -46,11 +47,20 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || e.repeat) return;
+      if (
+        !["Space", "KeyP"].includes(e.code) ||
+        e.repeat ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey
+      )
+        return;
 
       if (
         e.target instanceof HTMLElement &&
-        (e.target.matches("input, textarea, select") ||
+        (e.target.closest(
+          "input, textarea, select, button, a, audio, [role='button'], dialog"
+        ) ||
           e.target.isContentEditable)
       ) {
         return;
@@ -58,7 +68,13 @@ export default function App() {
 
       e.preventDefault();
       e.stopPropagation();
-      stampNow();
+      if (e.code === "Space") stampNow();
+      else {
+        const audio = audioRef.current;
+        if (!audio) return;
+        if (audio.paused) void audio.play().catch(() => {});
+        else audio.pause();
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
@@ -69,7 +85,15 @@ export default function App() {
   }, [stampNow]);
 
   // Save errors show in the top bar; these screens are only for before the track loads.
-  if (!track && error) return <p className={styles.status}>{error}</p>;
+  if (!track && error) {
+    return (
+      <div className={styles.loader}>
+        <h1>Couldn't open the editor</h1>
+        <p role="alert">{error}</p>
+        <Button onClick={loadTracks}>Try again</Button>
+      </div>
+    );
+  }
   if (!track) {
     return (
       <div className={styles.loader} role="status">
