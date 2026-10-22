@@ -432,3 +432,15 @@ Ctrl/⌘ Z undoes, Ctrl/⌘ Shift Z and Ctrl Y redo. The handler ignores keys wh
 
 - **Why:** tests can create separate stores with a fake service, without IndexedDB.
 - **Trade-off:** no store or command tests exist yet; only the Playwright specs in `e2e/` do.
+
+---
+
+_Task: improving the "How it works" guide (developer's request)._
+
+## Three steps up front, the details in expandable sections
+
+The guide starts with three steps (choose a track, stamp, fine-tune and save) and the shortcuts beside them. The details on editing, saving, conflicts and tracks moved into native `<details>` sections, while the title, ✕, a save-before-reload reminder and "Back to editor" stay outside the scrolling part.
+
+- **Why:** a new user sees the whole workflow at once, and a returning user opens only the part they need. `<details>` works with the keyboard on its own, with no open/closed state to manage.
+- **Considered:** custom tabs or an accordion, which need their own state and keyboard handling.
+- **Trade-off:** the rules (red lines, Reset timings saving at once) are only seen after opening a section. On phones the guide is one column, and in short landscape windows the subtitle and the save reminder are hidden to leave room for the help.
