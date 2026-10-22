@@ -178,7 +178,7 @@ export default function TrackSwitcher() {
           onClose={() => setPending(null)}
           onConfirm={resetTimings}
           title="Reset timings?"
-          message={`All timings of "${pending.track.title}" will be cleared and saved, together with any unsaved text edits. This can't be undone.`}
+          message={`All timings of "${pending.track.title}" will be cleared and saved, together with any unsaved text edits. Undo can restore the timings in this session; save again to keep them.`}
           confirmLabel="Reset timings"
           danger
         />

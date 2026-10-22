@@ -7,6 +7,7 @@ import Button from "./common/Button";
 import HowItWorksModal from "./HowItWorksModal";
 import TrackSwitcher from "./TrackSwitcher";
 import SaveConflictModal from "./SaveConflictModal";
+import HistoryControls from "./HistoryControls";
 import styles from "./Topbar.module.css";
 
 export default function Topbar() {
@@ -22,7 +23,7 @@ export default function Topbar() {
     useShallow((s) => ({
       error: (s.track && s.saveErrorsByTrack[s.track.id]) || s.error,
       hasConflict: !!s.track && !!s.conflictsByTrack[s.track.id],
-      isConflictOpen: s.isConflictDialogOpen,
+      isConflictOpen: !!s.track && s.conflictDialogTrackId === s.track.id,
       reviewConflict: s.reviewSaveConflict,
       // Save follows the open track, so switching tracks updates it.
       canSave:
@@ -51,6 +52,7 @@ export default function Topbar() {
         </span>
       </div>
       <TrackSwitcher />
+      <HistoryControls />
       <div className={styles.saveStatus} role="status">
         {!canSave && !hasConflict && !isSaving && !error && (
           <CircleCheck aria-hidden="true" />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eraser, Pencil, Play, Undo2 } from "lucide-react";
+import { Eraser, Pencil, Play, RotateCcw } from "lucide-react";
 import { useShallow } from "zustand/shallow";
 import { useEditorStore } from "../../data-alignment/store";
 import type { Line } from "../../types";
@@ -128,13 +128,13 @@ export default function LyricLineRow({
           </Tooltip>
         )}
         {isUnsaved && (
-          <Tooltip content="Undo changes">
+          <Tooltip content="Restore last save">
             <Button
               variant="text"
               color="neutral"
               size="small"
-              icon={<Undo2 />}
-              aria-label={`Undo changes to line ${number}`}
+              icon={<RotateCcw />}
+              aria-label={`Restore line ${number} to the last save`}
               onClick={(e) => {
                 e.stopPropagation();
                 resetLines([line.id]);

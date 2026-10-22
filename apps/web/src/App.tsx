@@ -8,9 +8,11 @@ import Button from "./components/common/Button";
 import styles from "./App.module.css";
 import { useEditorStore } from "./data-alignment/store";
 import { useTimingState } from "./hooks/useTimingState";
+import { useHistoryShortcuts } from "./hooks/useHistoryShortcuts";
 import { useShallow } from "zustand/shallow";
 
 export default function App() {
+  useHistoryShortcuts();
   const { error, loadTracks, selectLine, stampLine } = useEditorStore(
     useShallow((s) => ({
       error: s.error,
